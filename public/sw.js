@@ -9,13 +9,16 @@ self.addEventListener('push', (e) => {
     icon: '/icon-192.png',
     badge: '/icon-192.png',
     tag: d.tag,
-    data: { url: d.url || '/' },
+    actions: (d.actions || []).slice(0, 2).map((a, i) => ({ action: 'a' + i, title: a.title })),
+    data: { url: d.url || '/', actions: (d.actions || []).map((a) => a.url) },
   }));
 });
 
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
-  const url = new URL((e.notification.data && e.notification.data.url) || '/', self.location.origin).href;
+  const data = e.notification.data || {};
+  const picked = /^a\d$/.test(e.action || '') ? (data.actions || [])[Number(e.action.slice(1))] : null;
+  const url = new URL(picked || data.url || '/', self.location.origin).href;
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
     for (const c of list) if (c.url === url && 'focus' in c) return c.focus();
     return self.clients.openWindow(url);

@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS notifications (
   failed INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
-  finished_at INTEGER
+  finished_at INTEGER,
+  actions TEXT                       -- JSON [{title,url}] ปุ่มบนแจ้งเตือน
 );
 CREATE INDEX IF NOT EXISTS idx_notifications_status ON notifications(status, send_at);
 CREATE TABLE IF NOT EXISTS deliveries (

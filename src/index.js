@@ -149,15 +149,19 @@ async function createNotification(req, env, ctx) {
   const refs = listInput(b.refs);
   if (refs.length > MAX_REFS) return json({ error: `refs ได้ไม่เกิน ${MAX_REFS} รายการต่อครั้ง` }, 400);
 
+  // ปุ่มบนแจ้งเตือน (Android/คอมพิวเตอร์ แสดงได้ไม่เกิน 2 ปุ่ม; iPhone ไม่แสดงปุ่ม)
+  const actions = (Array.isArray(b.actions) ? b.actions : []).slice(0, 2)
+    .map((a) => ({ title: String(a?.title || '').trim().slice(0, 40), url: String(a?.url || '').trim() }))
+    .filter((a) => a.title && (/^https?:\/\//.test(a.url) || a.url.startsWith('/')));
   const sendAt = parseSendAt(b.sendAt);
   if (Number.isNaN(sendAt)) return json({ error: 'sendAt ไม่ถูกต้อง' }, 400);
   const scheduled = sendAt > now() + 30_000;
   const t = now();
   const res = await env.DB.prepare(
-    `INSERT INTO notifications (title, body, url, roles, refs, source, send_at, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO notifications (title, body, url, roles, refs, source, send_at, status, created_at, updated_at, actions)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(title, body, url, roles, refs.length ? JSON.stringify(refs) : null, (b.source || 'api').toString().slice(0, 50),
-    sendAt, scheduled ? 'scheduled' : 'queued', t, t).run();
+    sendAt, scheduled ? 'scheduled' : 'queued', t, t, actions.length ? JSON.stringify(actions) : null).run();
   const id = res.meta.last_row_id;
   if (!scheduled) ctx.waitUntil(startSend(env, id));
   return json({ ok: true, id, status: scheduled ? 'scheduled' : 'queued', sendAt }, 201);
@@ -204,7 +208,7 @@ async function processBatch(env, id) {
 
   if (results.length) {
     const vapid = await getVapid(env);
-    const payload = JSON.stringify({ title: n.title, body: n.body, url: n.url || '/', tag: `n${n.id}`, id: n.id });
+    const payload = JSON.stringify({ title: n.title, body: n.body, url: n.url || '/', tag: `n${n.id}`, id: n.id, actions: n.actions ? JSON.parse(n.actions) : undefined });
     const statuses = await Promise.all(results.map((r) => sendPush(r, payload, vapid, subject(env)).catch(() => 0)));
     const t = now();
     const stmts = [];
