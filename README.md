@@ -1,1 +1,72 @@
-# school-notify
+# school-notify: ระบบแจ้งเตือนกลาง โรงเรียนบ้านป่าเด็ง
+
+ส่งแจ้งเตือนเข้ามือถือด้วย **Web Push (PWA)** ฟรี ไม่มีโควต้า ไม่ต้องติดตั้งแอป
+รันบน Cloudflare Worker + D1 (`school-notify-db`) และไม่ใช้ npm package ใดๆ (เข้ารหัสด้วย WebCrypto เอง)
+
+| หน้า | ใช้ทำอะไร |
+|---|---|
+| `/` | หน้าสมัครรับแจ้งเตือน สำหรับครู ผู้ปกครอง และนักเรียน |
+| `/admin` | หน้าแอดมิน ใช้พิมพ์ส่ง ตั้งเวลา ดูประวัติ และยกเลิกรายการ |
+| `/api/notifications` | API ให้ระบบอื่นเรียกส่งแจ้งเตือนอัตโนมัติ |
+
+## ติดตั้ง
+
+1. ฐานข้อมูล D1 `school-notify-db` สร้างและลงตารางแล้ว (ถ้าต้องสร้างใหม่ให้รัน `schema.sql`)
+2. Deploy โดยเชื่อม repo กับ Cloudflare Workers Builds หรือรัน `npx wrangler deploy`
+3. ตั้ง Secrets 2 ตัว (Workers → school-notify → Settings → Variables and Secrets)
+   - `API_KEY`: คีย์ยาวๆ สุ่มขึ้นมา ให้ระบบอื่นใช้เรียก API
+   - `ADMIN_PASSWORD`: รหัสผ่านเข้าหน้า `/admin`
+4. โดเมน `notify.banpadengschool.ac.th` ตั้งไว้ใน `wrangler.jsonc` แล้ว
+5. VAPID key ไม่ต้องตั้งเอง ระบบสร้างให้ครั้งแรกและเก็บไว้ในตาราง `settings` (ห้ามลบ ถ้าลบ เครื่องที่สมัครไว้ทั้งหมดต้องสมัครใหม่)
+
+> ถ้า deploy ครั้งแรกขึ้น error เรื่อง service `school-notify` ไม่พบ ให้ลบบล็อก `services` ออกชั่วคราว deploy หนึ่งครั้ง แล้วใส่กลับ
+> บล็อกนี้ทำให้ส่งรอบละ 40 เครื่องต่อกันได้ทันที ถ้าไม่มีบล็อกนี้ cron จะส่งต่อให้นาทีละ 40 เครื่อง
+
+## ผู้ใช้สมัครรับแจ้งเตือน
+
+- **Android**: เปิดลิงก์ใน Chrome แล้วกด “เปิดรับการแจ้งเตือน”
+- **iPhone** (iOS 16.4 ขึ้นไป): เปิดใน Safari → แชร์ → เพิ่มไปยังหน้าจอโฮม → เปิดจากไอคอน แล้วกดเปิดรับ
+
+ลิงก์เติมข้อมูลให้อัตโนมัติได้ เช่น จากระบบผลการเรียน:
+
+```
+https://notify.banpadengschool.ac.th/?role=parent&ref=12345&label=ผู้ปกครองด.ช.ก
+```
+
+`role` เป็น `teacher` / `parent` / `student` (ใส่หลายค่าคั่นด้วยจุลภาคได้) ส่วน `ref` คือรหัสนักเรียนหรือรหัสครู
+
+## ระบบอื่นเรียกส่ง (อัตโนมัติ)
+
+```js
+await fetch('https://notify.banpadengschool.ac.th/api/notifications', {
+  method: 'POST',
+  headers: { 'content-type': 'application/json', authorization: `Bearer ${env.NOTIFY_API_KEY}` },
+  body: JSON.stringify({
+    title: 'ฝากเงินสำเร็จ',
+    body: 'ด.ช.ก ฝากเงิน 20 บาท ยอดคงเหลือ 540 บาท',
+    url: 'https://bank.banpadengschool.ac.th/',
+    roles: ['parent'],          // หรือ ['all']
+    refs: ['12345'],            // ไม่ใส่ = ส่งทุกคนใน roles
+    sendAt: '2026-11-07T07:30:00+07:00', // ไม่ใส่ = ส่งทันที
+    source: 'bank',
+  }),
+});
+```
+
+| field | จำเป็น | คำอธิบาย |
+|---|---|---|
+| `title` | ✓ | หัวข้อ (ไม่เกิน 120 ตัวอักษร) |
+| `body` | | ข้อความ (ไม่เกิน 1000 ตัวอักษร) |
+| `url` | | ลิงก์ที่เปิดเมื่อแตะแจ้งเตือน |
+| `roles` | | `teacher`, `parent`, `student`, `all` (ค่าเริ่มต้น `all`) |
+| `refs` | | รหัสผู้รับที่ต้องการ ไม่เกิน 80 รหัสต่อครั้ง |
+| `sendAt` | | เวลาส่ง เป็น ISO หรือ ms (ถ้าเกินเวลาปัจจุบัน 30 วินาทีขึ้นไปจะถูกตั้งเวลา) |
+| `source` | | ชื่อระบบที่ส่ง ใช้แสดงในประวัติ |
+
+API อื่นๆ (ต้องใช้ Bearer): `GET /api/notifications` (50 รายการล่าสุด), `POST /api/notifications/:id/cancel`, `GET /api/stats`
+
+## ทดสอบ
+
+```
+npm test   # ตรวจการเข้ารหัส aes128gcm และลายเซ็น VAPID
+```
