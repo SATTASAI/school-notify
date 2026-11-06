@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "school-notify",
+  "main": "src/index.js",
+  "compatibility_date": "2026-05-15",
+  "keep_vars": true,
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/internal/*"]
+  },
+  "observability": { "enabled": true },
+  // ส่งงานที่ตั้งเวลาไว้ + ต่องานค้าง ทุก 1 นาที
+  "triggers": { "crons": ["* * * * *"] },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "school-notify-db", "database_id": "c7531f5c-a73f-4cf5-b76b-80b5ca8ceed7" }
+  ],
+  // เรียกตัวเองเพื่อส่งเป็นรอบ ๆ ละ 40 เครื่อง (ไม่ชนเพดาน subrequest)
+  "services": [{ "binding": "SELF", "service": "school-notify" }],
+  // Secrets (ตั้งใน Cloudflare): API_KEY = ให้ระบบอื่นเรียก API, ADMIN_PASSWORD = รหัสเข้าหน้า /admin
+  "vars": { "VAPID_SUBJECT": "https://notify.banpadengschool.ac.th" },
+  "routes": [{ "pattern": "notify.banpadengschool.ac.th", "custom_domain": true }]
+}

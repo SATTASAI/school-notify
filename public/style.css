@@ -1,0 +1,34 @@
+*{box-sizing:border-box}
+body{margin:0;font-family:"Sarabun",system-ui,-apple-system,sans-serif;background:#f4f7fb;color:#1c2533;line-height:1.55}
+.wrap{max-width:640px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+header img{width:48px;height:48px;border-radius:12px}
+h1{font-size:1.3rem;margin:0}
+h2{font-size:1.05rem;margin:0 0 10px}
+.sub{color:#5b6b80;font-size:.9rem;margin:0}
+.card{background:#fff;border-radius:14px;padding:18px;margin-bottom:14px;box-shadow:0 1px 3px rgba(20,40,80,.08)}
+label{display:block;font-weight:600;margin:12px 0 6px}
+input[type=text],input[type=password],input[type=datetime-local],textarea{width:100%;padding:10px 12px;border:1px solid #cfd8e3;border-radius:10px;font:inherit;background:#fff}
+textarea{min-height:90px;resize:vertical}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:flex;align-items:center;gap:6px;border:1px solid #cfd8e3;border-radius:999px;padding:7px 14px;cursor:pointer;font-weight:500;margin:0}
+.chip input{accent-color:#1e66d2}
+button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:11px 16px;cursor:pointer;background:#1e66d2;color:#fff}
+button.ghost{background:#e8eef7;color:#1e3a66}
+button.danger{background:#fde8e8;color:#b42318}
+button:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.status{padding:10px 12px;border-radius:10px;background:#eef3fb;font-size:.95rem}
+.status.ok{background:#e7f6ec;color:#146c2e}
+.status.err{background:#fde8e8;color:#b42318}
+.hint{font-size:.85rem;color:#5b6b80;margin-top:6px}
+.guide ol{padding-left:20px;margin:6px 0}
+.hidden{display:none!important}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}
+.stats div{background:#eef3fb;border-radius:10px;padding:10px 4px}
+.stats b{display:block;font-size:1.3rem}
+.stats span{font-size:.8rem;color:#5b6b80}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid #eef1f5;vertical-align:top}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.75rem;background:#eef3fb}
+.badge.done{background:#e7f6ec;color:#146c2e}.badge.scheduled{background:#fff4e0;color:#8a5200}.badge.cancelled{background:#f1f1f1;color:#777}

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ส่งแจ้งเตือน · แอดมิน</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <img src="/icon-192.png" alt="">
+    <div><h1>ส่งแจ้งเตือน</h1><p class="sub">แอดมิน · โรงเรียนบ้านป่าเด็ง</p></div>
+  </header>
+
+  <div id="login" class="card">
+    <label for="pw">รหัสผ่านแอดมิน</label>
+    <input id="pw" type="password" autocomplete="current-password">
+    <div class="row"><button id="btnLogin">เข้าสู่ระบบ</button></div>
+    <p id="loginMsg" class="status err hidden" style="margin-top:12px"></p>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="card">
+      <h2>ผู้รับทั้งหมด</h2>
+      <div class="stats">
+        <div><b id="sTotal">–</b><span>เครื่อง</span></div>
+        <div><b id="sTeacher">–</b><span>ครู</span></div>
+        <div><b id="sParent">–</b><span>ผู้ปกครอง</span></div>
+        <div><b id="sStudent">–</b><span>นักเรียน</span></div>
+      </div>
+      <p class="hint">ลิงก์สมัครรับแจ้งเตือน: <a id="subLink" href="/">/</a></p>
+    </div>
+
+    <div class="card">
+      <h2>สร้างการแจ้งเตือน</h2>
+      <label for="title">หัวข้อ</label>
+      <input id="title" type="text" maxlength="120" placeholder="เช่น ประกาศหยุดเรียน">
+      <label for="body">ข้อความ</label>
+      <textarea id="body" maxlength="1000" placeholder="รายละเอียด"></textarea>
+      <label for="url">ลิงก์เมื่อแตะ <span class="sub">(ไม่บังคับ)</span></label>
+      <input id="url" type="text" placeholder="https://school-announcement.banpadengschool.ac.th/...">
+      <label>ส่งถึง</label>
+      <div class="chips" id="roles">
+        <label class="chip"><input type="checkbox" value="teacher" checked> ครู</label>
+        <label class="chip"><input type="checkbox" value="parent" checked> ผู้ปกครอง</label>
+        <label class="chip"><input type="checkbox" value="student" checked> นักเรียน</label>
+      </div>
+      <label for="refs">เฉพาะรหัส <span class="sub">(ไม่บังคับ คั่นด้วยจุลภาค)</span></label>
+      <input id="refs" type="text" placeholder="เว้นว่าง = ส่งทุกคนในกลุ่มที่เลือก">
+      <label for="sendAt">ตั้งเวลาส่ง <span class="sub">(เว้นว่าง = ส่งทันที)</span></label>
+      <input id="sendAt" type="datetime-local">
+      <div class="row"><button id="btnSend">ส่ง</button><button id="btnLogout" class="ghost">ออกจากระบบ</button></div>
+      <p id="sendMsg" class="status hidden" style="margin-top:12px"></p>
+    </div>
+
+    <div class="card">
+      <h2>ประวัติ <button id="btnReload" class="ghost" style="float:right;padding:4px 10px">รีเฟรช</button></h2>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>เวลา</th><th>หัวข้อ</th><th>ถึง</th><th>สถานะ</th><th></th></tr></thead>
+        <tbody id="history"></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+let token = sessionStorage.getItem('notifyToken') || '';
+const ROLE_TH = { teacher: 'ครู', parent: 'ผู้ปกครอง', student: 'นักเรียน', all: 'ทุกคน' };
+const STATUS_TH = { scheduled: 'ตั้งเวลา', queued: 'รอส่ง', sending: 'กำลังส่ง', done: 'ส่งแล้ว', cancelled: 'ยกเลิก' };
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (t) => new Date(t).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' });
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, { ...opts, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token, ...(opts.headers || {}) } });
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401) { logout(); throw new Error('รหัสผ่านไม่ถูกต้อง'); }
+  if (!r.ok) throw new Error(j.error || 'เกิดข้อผิดพลาด');
+  return j;
+}
+function msg(el, text, kind) { el.textContent = text; el.className = 'status ' + (kind || ''); }
+function logout() { token = ''; sessionStorage.removeItem('notifyToken'); $('app').classList.add('hidden'); $('login').classList.remove('hidden'); }
+
+async function enter() {
+  await api('/api/auth');
+  $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+  $('subLink').textContent = location.origin + '/'; $('subLink').href = '/';
+  loadAll();
+}
+async function loadAll() {
+  const s = await api('/api/stats');
+  $('sTotal').textContent = s.total; $('sTeacher').textContent = s.teacher; $('sParent').textContent = s.parent; $('sStudent').textContent = s.student;
+  const { notifications } = await api('/api/notifications');
+  $('history').innerHTML = notifications.map((n) => {
+    const to = n.roles === 'all' ? 'ทุกคน' : n.roles.split(',').map((r) => ROLE_TH[r]).join(', ');
+    const refs = n.refs ? '<br><span class="sub">' + esc(JSON.parse(n.refs).join(', ')) + '</span>' : '';
+    const count = n.status === 'done' ? ` ${n.sent}/${n.total}` : n.status === 'sending' ? ` ${n.ok_now}/${n.total}` : '';
+    const cancel = n.status === 'scheduled' ? `<button class="danger" style="padding:4px 10px" data-cancel="${n.id}">ยกเลิก</button>` : '';
+    return `<tr><td>${fmt(n.send_at)}</td><td><b>${esc(n.title)}</b><br><span class="sub">${esc(n.body).slice(0, 80)}</span><br><span class="sub">จาก: ${esc(n.source)}</span></td><td>${to}${refs}</td><td><span class="badge ${n.status}">${STATUS_TH[n.status] || n.status}${count}</span></td><td>${cancel}</td></tr>`;
+  }).join('') || '<tr><td colspan="5" class="sub">ยังไม่มีรายการ</td></tr>';
+}
+
+$('btnLogin').onclick = async () => {
+  token = $('pw').value; sessionStorage.setItem('notifyToken', token);
+  try { await enter(); } catch (e) { $('loginMsg').classList.remove('hidden'); $('loginMsg').textContent = e.message; }
+};
+$('pw').onkeydown = (e) => { if (e.key === 'Enter') $('btnLogin').click(); };
+$('btnLogout').onclick = logout;
+$('btnReload').onclick = () => loadAll().catch((e) => alert(e.message));
+$('history').onclick = async (e) => {
+  const id = e.target.dataset.cancel; if (!id || !confirm('ยกเลิกรายการนี้?')) return;
+  try { await api(`/api/notifications/${id}/cancel`, { method: 'POST' }); loadAll(); } catch (err) { alert(err.message); }
+};
+$('btnSend').onclick = async () => {
+  const roles = [...document.querySelectorAll('#roles input:checked')].map((i) => i.value);
+  const el = $('sendMsg');
+  if (!$('title').value.trim()) return msg(el, 'กรุณาใส่หัวข้อ', 'err');
+  if (!roles.length) return msg(el, 'กรุณาเลือกผู้รับ', 'err');
+  const sendAt = $('sendAt').value ? new Date($('sendAt').value).getTime() : undefined;
+  $('btnSend').disabled = true;
+  try {
+    const r = await api('/api/notifications', { method: 'POST', body: JSON.stringify({
+      title: $('title').value, body: $('body').value, url: $('url').value,
+      roles: roles.length === 3 ? ['all'] : roles, refs: $('refs').value, sendAt, source: 'admin',
+    }) });
+    msg(el, r.status === 'scheduled' ? `ตั้งเวลาส่งแล้ว (${fmt(r.sendAt)})` : 'กำลังส่ง…', 'ok');
+    ['title', 'body', 'url', 'refs', 'sendAt'].forEach((k) => { $(k).value = ''; });
+    setTimeout(() => loadAll().catch(() => {}), 1500);
+  } catch (e) { msg(el, e.message, 'err'); }
+  $('btnSend').disabled = false;
+};
+
+if (token) enter().catch(() => logout());
+</script>
+</body>
+</html>
