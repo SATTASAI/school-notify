@@ -1,4 +1,4 @@
-import { generateVapidKeys, sendPush } from './webpush.js';
+import { generateVapidKeys, sendPush, b64uEncode, b64uDecode } from './webpush.js';
 
 const ROLES = ['teacher', 'parent', 'student'];
 const BATCH = 40; // จำนวน push ต่อ 1 รอบ (ต่ำกว่าเพดาน subrequest ของแผนฟรี)
@@ -50,6 +50,23 @@ const toSet = (arr) => {
 const fromSet = (s) => (s || '').split(',').filter(Boolean);
 const listInput = (v) => (Array.isArray(v) ? v : typeof v === 'string' ? v.split(/[,\s]+/) : []).map((s) => String(s).trim()).filter(Boolean);
 
+// ลิงก์ผูกบัญชีจากระบบอื่น: t = base64url(JSON {ref, role, label, exp}) + '.' + HMAC-SHA256(API_KEY)
+async function hmac(secret, text) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return b64uEncode(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(text)));
+}
+async function verifyLinkToken(env, token) {
+  if (typeof token !== 'string' || !env.API_KEY) return null;
+  const [body, sig] = token.split('.');
+  if (!body || !sig || !safeEqual(sig, await hmac(env.API_KEY, body))) return null;
+  try {
+    const data = JSON.parse(new TextDecoder().decode(b64uDecode(body)));
+    if (!data.ref || !(data.exp > now()) || !ROLES.includes(data.role)) return null;
+    return data;
+  } catch { return null; }
+}
+const TRUSTED_REF = /^u:/; // รหัสที่ผูกด้วยลิงก์ที่ลงชื่อแล้วเท่านั้น พิมพ์เองไม่ได้
+
 async function readJson(req) {
   try { return await req.json(); } catch { return null; }
 }
@@ -61,15 +78,20 @@ async function subscribe(req, env) {
   if (!sub?.endpoint || !sub?.keys?.p256dh || !sub?.keys?.auth || !/^https:\/\//.test(sub.endpoint)) {
     return json({ error: 'ข้อมูล subscription ไม่ถูกต้อง' }, 400);
   }
+  const link = b.token ? await verifyLinkToken(env, b.token) : null;
+  if (b.token && !link) return json({ error: 'ลิงก์เชื่อมบัญชีหมดอายุหรือไม่ถูกต้อง กรุณากดปุ่มจากระบบโรงเรียนอีกครั้ง' }, 400);
   const roles = listInput(b.roles).filter((r) => ROLES.includes(r));
+  if (link && !roles.includes(link.role)) roles.push(link.role);
   if (!roles.length) return json({ error: 'กรุณาเลือกสถานะ (ครู/ผู้ปกครอง/นักเรียน)' }, 400);
-  const refs = listInput(b.refs).slice(0, 20);
-  const label = (b.label || '').toString().slice(0, 100) || null;
+  const refs = listInput(b.refs).filter((r) => !TRUSTED_REF.test(r)).slice(0, 20);
+  if (link) refs.push(link.ref);
+  const label = (link?.label || b.label || '').toString().slice(0, 100) || null;
   const ua = (req.headers.get('user-agent') || '').slice(0, 200);
 
   const existing = await env.DB.prepare('SELECT roles, refs FROM subscriptions WHERE endpoint = ?').bind(sub.endpoint).first();
   const mergedRoles = b.replace || !existing ? roles : [...fromSet(existing.roles), ...roles];
-  const mergedRefs = b.replace || !existing ? refs : [...fromSet(existing.refs), ...refs];
+  const keptTrusted = existing ? fromSet(existing.refs).filter((r) => TRUSTED_REF.test(r)) : [];
+  const mergedRefs = b.replace || !existing ? [...keptTrusted, ...refs] : [...fromSet(existing.refs), ...refs];
   const t = now();
   await env.DB.prepare(
     `INSERT INTO subscriptions (endpoint, p256dh, auth, roles, refs, label, user_agent, created_at, updated_at)
@@ -251,6 +273,28 @@ async function stats(env) {
   return json({ total: row.total || 0, teacher: row.teacher || 0, parent: row.parent || 0, student: row.student || 0 });
 }
 
+// รหัสที่มีเครื่องรับอยู่ (ให้ระบบอื่นรู้ว่าต้องส่งให้ใคร) เช่น /api/refs?prefix=u:
+async function listRefs(env, prefix) {
+  const { results } = await env.DB.prepare('SELECT refs FROM subscriptions WHERE refs LIKE ?').bind(`%,${prefix}%`).all();
+  const refs = new Set();
+  for (const r of results) for (const ref of fromSet(r.refs)) if (ref.startsWith(prefix)) refs.add(ref);
+  return json({ refs: [...refs] });
+}
+
+function manifest(url) {
+  const t = url.searchParams.get('t');
+  const start = t && /^[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+$/.test(t) ? `/?t=${t}` : '/';
+  return new Response(JSON.stringify({
+    name: 'แจ้งเตือน โรงเรียนบ้านป่าเด็ง', short_name: 'แจ้งเตือน บปด.', start_url: start, scope: '/', display: 'standalone',
+    background_color: '#f4f7fb', theme_color: '#1e66d2', lang: 'th',
+    icons: [
+      { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+    ],
+  }), { headers: { 'content-type': 'application/manifest+json; charset=utf-8' } });
+}
+
 // ---------- cron ----------
 async function runCron(env) {
   const due = await env.DB.prepare("SELECT id FROM notifications WHERE status = 'scheduled' AND send_at <= ? ORDER BY send_at LIMIT 5")
@@ -274,6 +318,7 @@ export default {
     const m = req.method;
 
     try {
+      if (p === '/manifest.webmanifest') return manifest(url);
       if (p === '/api/vapid-public-key' && m === 'GET') return json({ publicKey: (await getVapid(env)).publicKey });
       if (p === '/api/subscribe' && m === 'POST') return await subscribe(req, env);
       if (p === '/api/subscription' && m === 'POST') return await subscriptionInfo(req, env);
@@ -294,6 +339,7 @@ export default {
         const cm = p.match(/^\/api\/notifications\/(\d+)\/cancel$/);
         if (cm && m === 'POST') return await cancelNotification(env, Number(cm[1]));
         if (p === '/api/stats' && m === 'GET') return await stats(env);
+        if (p === '/api/refs' && m === 'GET') return await listRefs(env, url.searchParams.get('prefix') || '');
         if (p === '/api/auth' && m === 'GET') return json({ ok: true });
         return json({ error: 'not found' }, 404);
       }

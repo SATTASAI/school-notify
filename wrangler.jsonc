@@ -9,7 +9,7 @@
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*", "/internal/*"]
+    "run_worker_first": ["/api/*", "/internal/*", "/manifest.webmanifest"]
   },
   "observability": { "enabled": true },
   // ส่งงานที่ตั้งเวลาไว้ + ต่องานค้าง ทุก 1 นาที

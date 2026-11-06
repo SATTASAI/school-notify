@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>รับการแจ้งเตือน · โรงเรียนบ้านป่าเด็ง</title>
-<link rel="manifest" href="/manifest.webmanifest">
+<link rel="manifest" id="manifestLink" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="แจ้งเตือน บปด.">
@@ -40,6 +40,8 @@
 
   <div id="formCard" class="card">
     <h2>ข้อมูลผู้รับ</h2>
+    <div id="linked" class="status ok hidden" style="margin-bottom:6px"></div>
+    <div id="manualFields">
     <label>ฉันคือ</label>
     <div class="chips" id="roles">
       <label class="chip"><input type="checkbox" value="teacher"> ครู</label>
@@ -51,6 +53,7 @@
     <p class="hint">ผู้ปกครองที่มีบุตรหลายคน ใส่หลายรหัสคั่นด้วยจุลภาค เพื่อรับข่าวเฉพาะของบุตร</p>
     <label for="label">ชื่อ <span class="sub">(ไม่บังคับ)</span></label>
     <input id="label" type="text" placeholder="เช่น แม่น้องมิว">
+    </div>
 
     <div class="row">
       <button id="btnSub">🔔 เปิดรับการแจ้งเตือน</button>
@@ -75,6 +78,23 @@ function keyBytes(b64) { const p = '='.repeat((4 - b64.length % 4) % 4); const s
 async function post(url, body) { const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'เกิดข้อผิดพลาด'); return j; }
 function subscribedUI(on) { $('btnTest').classList.toggle('hidden', !on); $('btnUnsub').classList.toggle('hidden', !on); $('btnSub').textContent = on ? '💾 บันทึกข้อมูล' : '🔔 เปิดรับการแจ้งเตือน'; }
 
+// ลิงก์ผูกบัญชีจากระบบโรงเรียน (?t=...) — ใส่ไว้ใน manifest ด้วย เพื่อให้ไอคอนบนหน้าจอโฮมของ iPhone เปิดมาพร้อมลิงก์นี้
+const linkToken = qs.get('t');
+let linkInfo = null;
+if (linkToken) {
+  try {
+    const b = linkToken.split('.')[0].replace(/-/g, '+').replace(/_/g, '/');
+    linkInfo = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(b + '='.repeat((4 - b.length % 4) % 4)), (c) => c.charCodeAt(0))));
+  } catch { linkInfo = null; }
+  $('manifestLink').href = '/manifest.webmanifest?t=' + encodeURIComponent(linkToken);
+  if (linkInfo) {
+    $('manualFields').classList.add('hidden');
+    $('linked').classList.remove('hidden');
+    $('linked').textContent = '🔗 เชื่อมกับบัญชี: ' + (linkInfo.label || 'ระบบโรงเรียน');
+    setRoles([linkInfo.role]);
+  }
+}
+
 // ค่าที่ส่งมาจากระบบอื่น เช่น /?role=parent&ref=12345&label=...
 if (qs.get('role')) setRoles(qs.get('role').split(','));
 if (qs.get('ref')) $('refs').value = qs.get('ref');
@@ -89,12 +109,13 @@ async function init() {
   if (sub && Notification.permission === 'granted') {
     const info = await post('/api/subscription', { endpoint: sub.endpoint }).catch(() => null);
     if (info && info.subscribed) {
-      if (!qs.get('role')) setRoles(info.roles);
-      const refs = new Set([...info.refs, ...($('refs').value ? $('refs').value.split(/[,\s]+/) : [])].filter(Boolean));
+      if (!qs.get('role') && !linkInfo) setRoles(info.roles);
+      const refs = new Set([...info.refs.filter((r) => !r.startsWith('u:')), ...($('refs').value ? $('refs').value.split(/[,\s]+/) : [])].filter(Boolean));
       $('refs').value = [...refs].join(', ');
       if (!$('label').value && info.label) $('label').value = info.label;
       subscribedUI(true);
-      show('✅ เครื่องนี้เปิดรับการแจ้งเตือนอยู่แล้ว', 'ok');
+      if (linkInfo && !info.refs.includes(linkInfo.ref)) show('เครื่องนี้รับแจ้งเตือนอยู่แล้ว กด “บันทึกข้อมูล” เพื่อเชื่อมกับบัญชีนี้');
+      else show('✅ เครื่องนี้เปิดรับการแจ้งเตือนอยู่แล้ว', 'ok');
     }
   } else if (Notification.permission === 'denied') {
     show('การแจ้งเตือนถูกบล็อกไว้ กรุณาอนุญาตในการตั้งค่าเบราว์เซอร์/ตั้งค่าเครื่อง', 'err');
@@ -109,7 +130,7 @@ $('btnSub').onclick = async () => {
     if (perm !== 'granted') throw new Error('ไม่ได้รับอนุญาตให้แจ้งเตือน');
     let sub = await reg.pushManager.getSubscription();
     if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(publicKey) });
-    await post('/api/subscribe', { subscription: sub.toJSON(), roles: roles(), refs: $('refs').value, label: $('label').value, replace: true });
+    await post('/api/subscribe', { subscription: sub.toJSON(), roles: roles(), refs: $('refs').value, label: $('label').value, token: linkToken || undefined, replace: true });
     subscribedUI(true);
     show('✅ เปิดรับการแจ้งเตือนเรียบร้อย ลองกด “ส่งทดสอบ”', 'ok');
   } catch (e) { show(e.message, 'err'); }
