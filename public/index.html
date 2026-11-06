@@ -38,6 +38,12 @@
     <div class="status err">เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน ลองเปิดด้วย Chrome (Android) หรือ Safari (iPhone)</div>
   </div>
 
+  <div id="closedCard" class="card hidden">
+    <h2>เปิดรับแจ้งเตือนผ่านระบบโรงเรียน</h2>
+    <p class="sub" style="margin-bottom:12px">ครูและบุคลากร: เข้าระบบ system แล้วกดเปิดแจ้งเตือนที่ป็อปอัพ หรือที่หน้า <b>บัญชีของฉัน</b></p>
+    <a href="https://system.banpadengschool.ac.th/account.html"><button type="button">ไปที่ระบบโรงเรียน</button></a>
+  </div>
+
   <div id="formCard" class="card">
     <h2>ข้อมูลผู้รับ</h2>
     <div id="linked" class="status ok hidden" style="margin-bottom:6px"></div>
@@ -101,6 +107,8 @@ if (qs.get('ref')) $('refs').value = qs.get('ref');
 if (qs.get('label')) $('label').value = qs.get('label');
 
 async function init() {
+  const open = await fetch('/api/config').then((r) => r.json()).then((j) => j.openSubscribe).catch(() => false);
+  if (!linkInfo && !open) { $('formCard').classList.add('hidden'); $('closedCard').classList.remove('hidden'); $('iosGuide').classList.add('hidden'); return; }
   if (isIOS && !standalone) { $('iosGuide').classList.remove('hidden'); }
   if (!supported) { if (!isIOS) $('unsupported').classList.remove('hidden'); $('btnSub').disabled = true; return; }
   reg = await navigator.serviceWorker.register('/sw.js');

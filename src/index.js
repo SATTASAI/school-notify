@@ -80,6 +80,8 @@ async function subscribe(req, env) {
   }
   const link = b.token ? await verifyLinkToken(env, b.token) : null;
   if (b.token && !link) return json({ error: 'ลิงก์เชื่อมบัญชีหมดอายุหรือไม่ถูกต้อง กรุณากดปุ่มจากระบบโรงเรียนอีกครั้ง' }, 400);
+  // สมัครได้เฉพาะผ่านลิงก์จากระบบโรงเรียน (ผูกบัญชี) — เปิดให้สมัครเองได้ด้วยตัวแปร OPEN_SUBSCRIBE=true
+  if (!link && env.OPEN_SUBSCRIBE !== 'true') return json({ error: 'กรุณาเปิดรับแจ้งเตือนผ่านระบบโรงเรียน (บัญชีของฉัน)' }, 403);
   const roles = listInput(b.roles).filter((r) => ROLES.includes(r));
   if (link && !roles.includes(link.role)) roles.push(link.role);
   if (!roles.length) return json({ error: 'กรุณาเลือกสถานะ (ครู/ผู้ปกครอง/นักเรียน)' }, 400);
@@ -354,6 +356,7 @@ export default {
 
     try {
       if (p === '/manifest.webmanifest') return manifest(url);
+      if (p === '/api/config' && m === 'GET') return json({ openSubscribe: env.OPEN_SUBSCRIBE === 'true' });
       if (p === '/api/vapid-public-key' && m === 'GET') return json({ publicKey: (await getVapid(env)).publicKey });
       if (p === '/api/subscribe' && m === 'POST') return await subscribe(req, env);
       if (p === '/api/subscription' && m === 'POST') return await subscriptionInfo(req, env);
