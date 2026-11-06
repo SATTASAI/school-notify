@@ -86,7 +86,7 @@ async function subscribe(req, env) {
   const refs = listInput(b.refs).filter((r) => !TRUSTED_REF.test(r)).slice(0, 20);
   if (link) refs.push(link.ref);
   const label = (link?.label || b.label || '').toString().slice(0, 100) || null;
-  const ua = (req.headers.get('user-agent') || '').slice(0, 200);
+  const ua = (link && typeof b.userAgent === 'string' ? b.userAgent : req.headers.get('user-agent') || '').slice(0, 200);
 
   const existing = await env.DB.prepare('SELECT roles, refs FROM subscriptions WHERE endpoint = ?').bind(sub.endpoint).first();
   const mergedRoles = b.replace || !existing ? roles : [...fromSet(existing.roles), ...roles];
@@ -281,6 +281,33 @@ async function listRefs(env, prefix) {
   return json({ refs: [...refs] });
 }
 
+function deviceOf(ua, endpoint) {
+  const u = ua || '';
+  if (/iPhone|iPod/.test(u)) return 'iPhone';
+  if (/iPad/.test(u)) return 'iPad';
+  if (/Android/.test(u)) return 'Android';
+  if (/Windows/.test(u)) return 'คอมพิวเตอร์ (Windows)';
+  if (/Macintosh|Mac OS X/.test(u)) return 'คอมพิวเตอร์ (Mac)';
+  if (/CrOS|Linux/.test(u)) return 'คอมพิวเตอร์';
+  const host = (() => { try { return new URL(endpoint).host; } catch { return ''; } })();
+  if (host.endsWith('push.apple.com')) return 'อุปกรณ์ Apple';
+  if (host.includes('googleapis.com')) return 'Chrome / Android';
+  if (host.includes('mozilla')) return 'Firefox';
+  if (host.includes('windows.com')) return 'Edge';
+  return 'ไม่ทราบ';
+}
+
+// รายการเครื่องที่ผูกรหัสตาม prefix (ให้ระบบโรงเรียนแสดงหน้าตรวจสอบ) — ไม่ส่ง endpoint/คีย์ออกไป
+async function listSubscriptions(env, prefix) {
+  const { results } = await env.DB.prepare(
+    'SELECT id, refs, endpoint, user_agent, created_at, last_ok_at, fail_count FROM subscriptions WHERE refs LIKE ? ORDER BY id'
+  ).bind(`%,${prefix}%`).all();
+  return json({ subscriptions: results.map((r) => ({
+    id: r.id, refs: fromSet(r.refs).filter((x) => x.startsWith(prefix)), device: deviceOf(r.user_agent, r.endpoint),
+    created_at: r.created_at, last_ok_at: r.last_ok_at, fail_count: r.fail_count,
+  })) });
+}
+
 function manifest(url) {
   const t = url.searchParams.get('t');
   const start = t && /^[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+$/.test(t) ? `/?t=${t}` : '/';
@@ -339,6 +366,7 @@ export default {
         const cm = p.match(/^\/api\/notifications\/(\d+)\/cancel$/);
         if (cm && m === 'POST') return await cancelNotification(env, Number(cm[1]));
         if (p === '/api/stats' && m === 'GET') return await stats(env);
+        if (p === '/api/subscriptions' && m === 'GET') return await listSubscriptions(env, url.searchParams.get('prefix') || 'u:');
         if (p === '/api/refs' && m === 'GET') return await listRefs(env, url.searchParams.get('prefix') || '');
         if (p === '/api/auth' && m === 'GET') return json({ ok: true });
         return json({ error: 'not found' }, 404);
