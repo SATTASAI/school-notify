@@ -90,8 +90,12 @@ async function subscribe(req, env) {
 
   const existing = await env.DB.prepare('SELECT roles, refs FROM subscriptions WHERE endpoint = ?').bind(sub.endpoint).first();
   const mergedRoles = b.replace || !existing ? roles : [...fromSet(existing.roles), ...roles];
-  const keptTrusted = existing ? fromSet(existing.refs).filter((r) => TRUSTED_REF.test(r)) : [];
-  const mergedRefs = b.replace || !existing ? [...keptTrusted, ...refs] : [...fromSet(existing.refs), ...refs];
+  // exclusive (ส่งมาจากระบบโรงเรียน): เครื่องนี้ผูกกับบัญชีล่าสุดที่กดเปิดเท่านั้น — กันเครื่องใช้ร่วมกันได้รับแจ้งเตือนของคนอื่น
+  const exclusive = Boolean(link && b.exclusive);
+  const existingRefs = existing ? fromSet(existing.refs) : [];
+  const keptTrusted = exclusive ? [] : existingRefs.filter((r) => TRUSTED_REF.test(r));
+  const mergedRefs = exclusive ? [...existingRefs.filter((r) => !TRUSTED_REF.test(r)), ...refs]
+    : b.replace || !existing ? [...keptTrusted, ...refs] : [...existingRefs, ...refs];
   const t = now();
   await env.DB.prepare(
     `INSERT INTO subscriptions (endpoint, p256dh, auth, roles, refs, label, user_agent, created_at, updated_at)
