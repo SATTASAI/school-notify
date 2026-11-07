@@ -1,3 +1,4 @@
+import { chatRoute } from './chat.js';
 import { generateVapidKeys, sendPush, b64uEncode, b64uDecode } from './webpush.js';
 
 const ROLES = ['teacher', 'parent', 'student'];
@@ -55,13 +56,13 @@ async function hmac(secret, text) {
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   return b64uEncode(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(text)));
 }
-async function verifyLinkToken(env, token) {
+async function verifyLinkToken(env, token, allowExpired = false) {
   if (typeof token !== 'string' || !env.API_KEY) return null;
   const [body, sig] = token.split('.');
   if (!body || !sig || !safeEqual(sig, await hmac(env.API_KEY, body))) return null;
   try {
     const data = JSON.parse(new TextDecoder().decode(b64uDecode(body)));
-    if (!data.ref || !(data.exp > now()) || !ROLES.includes(data.role)) return null;
+    if (!data.ref || (!allowExpired && !(data.exp > now())) || !ROLES.includes(data.role)) return null;
     return data;
   } catch { return null; }
 }
@@ -214,7 +215,7 @@ async function processBatch(env, id) {
 
   if (results.length) {
     const vapid = await getVapid(env);
-    const payload = JSON.stringify({ title: n.title, body: n.body, url: n.url || '/', tag: `n${n.id}`, id: n.id, actions: n.actions ? JSON.parse(n.actions) : undefined });
+    const payload = JSON.stringify({ title: n.title, body: n.body, url: '/?message=' + n.id, tag: `n${n.id}`, id: n.id, actions: n.actions ? JSON.parse(n.actions) : undefined });
     const statuses = await Promise.all(results.map((r) => sendPush(r, payload, vapid, subject(env)).catch(() => 0)));
     const t = now();
     const stmts = [];
@@ -355,6 +356,8 @@ export default {
     const m = req.method;
 
     try {
+      const chat = await chatRoute(req, env, ctx, { verifyLinkToken, hmac, authorized: isAuthorized(req, env), createNotification });
+      if (chat) return chat;
       if (p === '/manifest.webmanifest') return manifest(url);
       if (p === '/api/config' && m === 'GET') return json({ openSubscribe: env.OPEN_SUBSCRIBE === 'true' });
       if (p === '/api/vapid-public-key' && m === 'GET') return json({ publicKey: (await getVapid(env)).publicKey });

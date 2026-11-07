@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "test": "node scripts/test-webpush.mjs"
+    "test": "node scripts/test-webpush.mjs && node scripts/test-chat.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.92.0"

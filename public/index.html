@@ -1,163 +1,28 @@
 <!doctype html>
 <html lang="th">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>รับการแจ้งเตือน · โรงเรียนบ้านป่าเด็ง</title>
-<link rel="manifest" id="manifestLink" href="/manifest.webmanifest">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="แจ้งเตือน บปด.">
-<meta name="theme-color" content="#1e66d2">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>ข้อความ · โรงเรียนบ้านป่าเด็ง</title>
+<link rel="manifest" id="manifestLink" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#f7f9fc">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/chat.css">
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <img src="/icon-192.png" alt="">
-    <div>
-      <h1>รับการแจ้งเตือนจากโรงเรียน</h1>
-      <p class="sub">โรงเรียนบ้านป่าเด็ง · ฟรี ไม่ต้องติดตั้งแอป</p>
-    </div>
-  </header>
-
-  <div id="iosGuide" class="card guide hidden">
-    <h2>📱 iPhone / iPad: เพิ่มลงหน้าจอโฮมก่อน</h2>
-    <ol>
-      <li>เปิดหน้านี้ใน <b>Safari</b></li>
-      <li>แตะปุ่ม <b>แชร์</b> (สี่เหลี่ยมมีลูกศรขึ้น)</li>
-      <li>เลือก <b>เพิ่มไปยังหน้าจอโฮม</b> (Add to Home Screen) แล้วกด <b>เพิ่ม</b></li>
-      <li>เปิดไอคอน “แจ้งเตือน บปด.” จากหน้าจอโฮม แล้วกดเปิดรับการแจ้งเตือน</li>
-    </ol>
-    <p class="hint">ต้องใช้ iOS 16.4 ขึ้นไป</p>
-  </div>
-
-  <div id="unsupported" class="card hidden">
-    <div class="status err">เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน ลองเปิดด้วย Chrome (Android) หรือ Safari (iPhone)</div>
-  </div>
-
-  <div id="closedCard" class="card hidden">
-    <h2>เปิดรับแจ้งเตือนผ่านระบบโรงเรียน</h2>
-    <p class="sub" style="margin-bottom:12px">ครูและบุคลากร: เข้าระบบ system แล้วกดเปิดแจ้งเตือนที่ป็อปอัพ หรือที่หน้า <b>บัญชีของฉัน</b></p>
-    <a href="https://system.banpadengschool.ac.th/account.html"><button type="button">ไปที่ระบบโรงเรียน</button></a>
-  </div>
-
-  <div id="formCard" class="card">
-    <h2>ข้อมูลผู้รับ</h2>
-    <div id="linked" class="status ok hidden" style="margin-bottom:6px"></div>
-    <div id="manualFields">
-    <label>ฉันคือ</label>
-    <div class="chips" id="roles">
-      <label class="chip"><input type="checkbox" value="teacher"> ครู</label>
-      <label class="chip"><input type="checkbox" value="parent"> ผู้ปกครอง</label>
-      <label class="chip"><input type="checkbox" value="student"> นักเรียน</label>
-    </div>
-    <label for="refs">รหัสนักเรียน / รหัสครู <span class="sub">(ไม่บังคับ)</span></label>
-    <input id="refs" type="text" inputmode="numeric" placeholder="เช่น 12345, 12346">
-    <p class="hint">ผู้ปกครองที่มีบุตรหลายคน ใส่หลายรหัสคั่นด้วยจุลภาค เพื่อรับข่าวเฉพาะของบุตร</p>
-    <label for="label">ชื่อ <span class="sub">(ไม่บังคับ)</span></label>
-    <input id="label" type="text" placeholder="เช่น แม่น้องมิว">
-    </div>
-
-    <div class="row">
-      <button id="btnSub">🔔 เปิดรับการแจ้งเตือน</button>
-      <button id="btnTest" class="ghost hidden">ส่งทดสอบ</button>
-      <button id="btnUnsub" class="danger hidden">ยกเลิก</button>
-    </div>
-    <p id="status" class="status hidden" style="margin-top:14px"></p>
-  </div>
-</div>
-<script>
-const $ = (id) => document.getElementById(id);
-const qs = new URLSearchParams(location.search);
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
-let reg = null, publicKey = null;
-
-function show(msg, kind) { const s = $('status'); s.textContent = msg; s.className = 'status ' + (kind || ''); }
-function roles() { return [...document.querySelectorAll('#roles input:checked')].map((i) => i.value); }
-function setRoles(list) { document.querySelectorAll('#roles input').forEach((i) => { i.checked = list.includes(i.value); }); }
-function keyBytes(b64) { const p = '='.repeat((4 - b64.length % 4) % 4); const s = atob((b64 + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(s, (c) => c.charCodeAt(0)); }
-async function post(url, body) { const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error(j.error || 'เกิดข้อผิดพลาด'); return j; }
-function subscribedUI(on) { $('btnTest').classList.toggle('hidden', !on); $('btnUnsub').classList.toggle('hidden', !on); $('btnSub').textContent = on ? '💾 บันทึกข้อมูล' : '🔔 เปิดรับการแจ้งเตือน'; }
-
-// ลิงก์ผูกบัญชีจากระบบโรงเรียน (?t=...) — ใส่ไว้ใน manifest ด้วย เพื่อให้ไอคอนบนหน้าจอโฮมของ iPhone เปิดมาพร้อมลิงก์นี้
-const linkToken = qs.get('t');
-let linkInfo = null;
-if (linkToken) {
-  try {
-    const b = linkToken.split('.')[0].replace(/-/g, '+').replace(/_/g, '/');
-    linkInfo = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(b + '='.repeat((4 - b.length % 4) % 4)), (c) => c.charCodeAt(0))));
-  } catch { linkInfo = null; }
-  $('manifestLink').href = '/manifest.webmanifest?t=' + encodeURIComponent(linkToken);
-  if (linkInfo) {
-    $('manualFields').classList.add('hidden');
-    $('linked').classList.remove('hidden');
-    $('linked').textContent = '🔗 เชื่อมกับบัญชี: ' + (linkInfo.label || 'ระบบโรงเรียน');
-    setRoles([linkInfo.role]);
-  }
-}
-
-// ค่าที่ส่งมาจากระบบอื่น เช่น /?role=parent&ref=12345&label=...
-if (qs.get('role')) setRoles(qs.get('role').split(','));
-if (qs.get('ref')) $('refs').value = qs.get('ref');
-if (qs.get('label')) $('label').value = qs.get('label');
-
-async function init() {
-  const open = await fetch('/api/config').then((r) => r.json()).then((j) => j.openSubscribe).catch(() => false);
-  if (!linkInfo && !open) { $('formCard').classList.add('hidden'); $('closedCard').classList.remove('hidden'); $('iosGuide').classList.add('hidden'); return; }
-  if (isIOS && !standalone) { $('iosGuide').classList.remove('hidden'); }
-  if (!supported) { if (!isIOS) $('unsupported').classList.remove('hidden'); $('btnSub').disabled = true; return; }
-  reg = await navigator.serviceWorker.register('/sw.js');
-  publicKey = (await (await fetch('/api/vapid-public-key')).json()).publicKey;
-  const sub = await reg.pushManager.getSubscription();
-  if (sub && Notification.permission === 'granted') {
-    const info = await post('/api/subscription', { endpoint: sub.endpoint }).catch(() => null);
-    if (info && info.subscribed) {
-      if (!qs.get('role') && !linkInfo) setRoles(info.roles);
-      const refs = new Set([...info.refs.filter((r) => !r.startsWith('u:')), ...($('refs').value ? $('refs').value.split(/[,\s]+/) : [])].filter(Boolean));
-      $('refs').value = [...refs].join(', ');
-      if (!$('label').value && info.label) $('label').value = info.label;
-      subscribedUI(true);
-      if (linkInfo && !info.refs.includes(linkInfo.ref)) show('เครื่องนี้รับแจ้งเตือนอยู่แล้ว กด “บันทึกข้อมูล” เพื่อเชื่อมกับบัญชีนี้');
-      else show('✅ เครื่องนี้เปิดรับการแจ้งเตือนอยู่แล้ว', 'ok');
-    }
-  } else if (Notification.permission === 'denied') {
-    show('การแจ้งเตือนถูกบล็อกไว้ กรุณาอนุญาตในการตั้งค่าเบราว์เซอร์/ตั้งค่าเครื่อง', 'err');
-  }
-}
-
-$('btnSub').onclick = async () => {
-  if (!roles().length) return show('กรุณาเลือกว่าเป็นครู ผู้ปกครอง หรือนักเรียน', 'err');
-  $('btnSub').disabled = true;
-  try {
-    const perm = await Notification.requestPermission(); // ต้องเรียกทันทีเมื่อกดปุ่ม (iOS)
-    if (perm !== 'granted') throw new Error('ไม่ได้รับอนุญาตให้แจ้งเตือน');
-    let sub = await reg.pushManager.getSubscription();
-    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(publicKey) });
-    await post('/api/subscribe', { subscription: sub.toJSON(), roles: roles(), refs: $('refs').value, label: $('label').value, token: linkToken || undefined, replace: true });
-    subscribedUI(true);
-    show('✅ เปิดรับการแจ้งเตือนเรียบร้อย ลองกด “ส่งทดสอบ”', 'ok');
-  } catch (e) { show(e.message, 'err'); }
-  $('btnSub').disabled = false;
-};
-
-$('btnTest').onclick = async () => {
-  try { const sub = await reg.pushManager.getSubscription(); const r = await post('/api/test', { endpoint: sub.endpoint }); show(r.ok ? 'ส่งแล้ว รอสักครู่…' : 'ส่งไม่สำเร็จ (' + r.status + ')', r.ok ? 'ok' : 'err'); }
-  catch (e) { show(e.message, 'err'); }
-};
-
-$('btnUnsub').onclick = async () => {
-  if (!confirm('ยกเลิกการรับแจ้งเตือนบนเครื่องนี้?')) return;
-  const sub = await reg.pushManager.getSubscription();
-  if (sub) { await post('/api/unsubscribe', { endpoint: sub.endpoint }).catch(() => {}); await sub.unsubscribe(); }
-  subscribedUI(false); show('ยกเลิกแล้ว');
-};
-
-init().catch((e) => show(e.message, 'err'));
-</script>
-</body>
-</html>
+<main class="messenger" id="messenger">
+  <aside class="inbox">
+    <div class="brand"><img src="/icon-192.png" alt=""><div>School Notify<small>โรงเรียนบ้านป่าเด็ง</small></div></div>
+    <div class="inbox-heading"><h1>ข้อความ</h1><a class="icon-button" id="settingsLink" href="/setup" aria-label="ตั้งค่าการแจ้งเตือน">⚙</a></div>
+    <p class="section-label">กล่องข้อความของคุณ</p>
+    <button class="conversation active" id="openRoom"><span class="avatar">บปด<span class="dot"></span></span><span class="conversation-copy"><span class="conversation-title">โรงเรียนบ้านป่าเด็ง <span class="verified">✓</span></span><span class="preview" id="preview">ประกาศและข้อความจากโรงเรียน</span></span><span class="unread hidden" id="unread">ใหม่</span></button>
+    <div class="inbox-note"><span>◈</span><p>ทุกเรื่องจากโรงเรียน<br><b>อยู่ในห้องเดียวกัน</b></p></div>
+    <div class="account"><span class="account-avatar" id="accountInitial">ฉัน</span><div><strong id="accountName">บัญชีของคุณ</strong><small>ห้องข้อความส่วนตัวกับโรงเรียน</small></div><button id="logout" class="icon-button hidden" aria-label="ออกจากบัญชี">↪</button></div>
+  </aside>
+  <section class="thread" aria-label="ห้องข้อความโรงเรียน">
+    <header class="thread-header"><button class="icon-button mobile-back" id="back" aria-label="กลับไปกล่องข้อความ">‹</button><span class="avatar small">บปด</span><div class="header-copy"><h2>โรงเรียนบ้านป่าเด็ง <span class="verified">✓</span></h2><p>ประกาศจากโรงเรียน · ตอบกลับถึงแอดมิน</p></div><a class="icon-button" href="/setup" id="threadSettings" aria-label="ตั้งค่าการแจ้งเตือน">⚙</a></header>
+    <div class="connection" id="connection" role="status" aria-live="polite">กำลังเปิดห้องข้อความ…</div>
+    <div class="timeline" id="timeline" role="log" aria-label="ประวัติข้อความ"><button id="older" class="older hidden">ดูข้อความก่อนหน้า</button><div id="messages"></div><div class="welcome" id="welcome"><span class="welcome-icon">✉</span><h2>คุยกับโรงเรียนได้ที่นี่</h2><p>รับประกาศ ติดตามข่าวสาร และพิมพ์ตอบกลับ<br>แอดมินจะเข้ามาตอบเมื่อสะดวก</p></div></div>
+    <button class="new-messages hidden" id="newMessages">มีข้อความใหม่ ↓</button>
+    <div class="login-gate hidden" id="gate"><h2>เปิดห้องข้อความของคุณ</h2><p>เข้าสู่ระบบโรงเรียน แล้วเปิดการแจ้งเตือนจากหน้า “บัญชีของฉัน”</p><a class="primary-link" href="https://system.banpadengschool.ac.th/account.html">ไปที่บัญชีของฉัน</a><a href="/setup">ตั้งค่ารับการแจ้งเตือน</a></div>
+    <form class="composer" id="composer"><div class="compose-box"><label class="sr-only" for="draft">ข้อความถึงแอดมิน</label><textarea id="draft" placeholder="พิมพ์ข้อความถึงแอดมิน…" rows="1" maxlength="2000" disabled></textarea><button class="send" id="send" type="submit" aria-label="ส่งข้อความ" disabled>↑</button></div><p>ตอบกลับเป็นการส่วนตัวถึงแอดมินโรงเรียน <span id="count">0/2000</span></p></form>
+  </section>
+</main>
+<script type="module" src="/chat.js"></script>
+</body></html>
