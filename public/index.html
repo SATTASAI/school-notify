@@ -1,28 +1,26 @@
 <!doctype html>
 <html lang="th">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>ข้อความ · โรงเรียนบ้านป่าเด็ง</title>
-<link rel="manifest" id="manifestLink" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#f7f9fc">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content"><title>ข้อความ · โรงเรียนบ้านป่าเด็ง</title>
+<link rel="manifest" id="manifestLink" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="ข้อความ บปด."><meta name="theme-color" content="#ffffff"><meta name="format-detection" content="telephone=no,email=no,address=no">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/chat.css">
 </head>
-<body>
-<main class="messenger" id="messenger">
-  <aside class="inbox">
-    <div class="brand"><img src="/icon-192.png" alt=""><div>School Notify<small>โรงเรียนบ้านป่าเด็ง</small></div></div>
-    <div class="inbox-heading"><h1>ข้อความ</h1><a class="icon-button" id="settingsLink" href="/setup" aria-label="ตั้งค่าการแจ้งเตือน">⚙</a></div>
-    <p class="section-label">กล่องข้อความของคุณ</p>
-    <button class="conversation active" id="openRoom"><span class="avatar">บปด<span class="dot"></span></span><span class="conversation-copy"><span class="conversation-title">โรงเรียนบ้านป่าเด็ง <span class="verified">✓</span></span><span class="preview" id="preview">ประกาศและข้อความจากโรงเรียน</span></span><span class="unread hidden" id="unread">ใหม่</span></button>
-    <div class="inbox-note"><span>◈</span><p>ทุกเรื่องจากโรงเรียน<br><b>อยู่ในห้องเดียวกัน</b></p></div>
-    <div class="account"><span class="account-avatar" id="accountInitial">ฉัน</span><div><strong id="accountName">บัญชีของคุณ</strong><small>ห้องข้อความส่วนตัวกับโรงเรียน</small></div><button id="logout" class="icon-button hidden" aria-label="ออกจากบัญชี">↪</button></div>
-  </aside>
+<body class="user-chat">
+<main class="messenger room-open" id="messenger">
   <section class="thread" aria-label="ห้องข้อความโรงเรียน">
-    <header class="thread-header"><button class="icon-button mobile-back" id="back" aria-label="กลับไปกล่องข้อความ">‹</button><span class="avatar small">บปด</span><div class="header-copy"><h2>โรงเรียนบ้านป่าเด็ง <span class="verified">✓</span></h2><p>ประกาศจากโรงเรียน · ตอบกลับถึงแอดมิน</p></div><a class="icon-button" href="/setup" id="threadSettings" aria-label="ตั้งค่าการแจ้งเตือน">⚙</a></header>
+    <header class="thread-header"><img class="school-avatar" src="/icon-192.png" alt=""><div class="header-copy"><h1>โรงเรียนบ้านป่าเด็ง <span class="verified" aria-label="บัญชีโรงเรียน">✓</span></h1><p>ห้องข้อความส่วนตัวกับโรงเรียน</p></div><button class="icon-button" id="threadSettings" type="button" aria-label="ตั้งค่าส่วนตัว" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="var(--surface,#fff)"/><circle cx="15" cy="17" r="3" fill="var(--surface,#fff)"/></svg></button></header>
     <div class="connection" id="connection" role="status" aria-live="polite">กำลังเปิดห้องข้อความ…</div>
-    <div class="timeline" id="timeline" role="log" aria-label="ประวัติข้อความ"><button id="older" class="older hidden">ดูข้อความก่อนหน้า</button><div id="messages"></div><div class="welcome" id="welcome"><span class="welcome-icon">✉</span><h2>คุยกับโรงเรียนได้ที่นี่</h2><p>รับประกาศ ติดตามข่าวสาร และพิมพ์ตอบกลับ<br>แอดมินจะเข้ามาตอบเมื่อสะดวก</p></div></div>
-    <button class="new-messages hidden" id="newMessages">มีข้อความใหม่ ↓</button>
-    <div class="login-gate hidden" id="gate"><h2>เปิดห้องข้อความของคุณ</h2><p>เข้าสู่ระบบโรงเรียน แล้วเปิดการแจ้งเตือนจากหน้า “บัญชีของฉัน”</p><a class="primary-link" href="https://system.banpadengschool.ac.th/account.html">ไปที่บัญชีของฉัน</a><a href="/setup">ตั้งค่ารับการแจ้งเตือน</a></div>
-    <form class="composer" id="composer"><div class="compose-box"><label class="sr-only" for="draft">ข้อความถึงแอดมิน</label><textarea id="draft" placeholder="พิมพ์ข้อความถึงแอดมิน…" rows="1" maxlength="2000" disabled></textarea><button class="send" id="send" type="submit" aria-label="ส่งข้อความ" disabled>↑</button></div><p>ตอบกลับเป็นการส่วนตัวถึงแอดมินโรงเรียน <span id="count">0/2000</span></p></form>
+    <div class="timeline" id="timeline" role="log" aria-label="ประวัติข้อความ" aria-relevant="additions"><button id="older" class="older hidden">ข้อความก่อนหน้า</button><div id="messages"></div><div class="welcome" id="welcome"><img src="/icon-192.png" alt=""><h2>โรงเรียนอยู่ใกล้คุณเสมอ</h2><p>รับข่าวสารและพิมพ์คุยกับแอดมิน<br>ข้อความของคุณเป็นส่วนตัว</p></div></div>
+    <button class="new-messages hidden" id="newMessages">ข้อความใหม่ <span aria-hidden="true">↓</span></button>
+    <div class="login-gate hidden" id="gate"><h2>เชื่อมบัญชีเพื่อเริ่มสนทนา</h2><p>เปิดตั้งค่าส่วนตัวเพื่อเชื่อมบัญชีโรงเรียน</p><button id="connectSettings" class="primary-link" type="button">ตั้งค่าส่วนตัว</button></div>
+    <form class="composer" id="composer"><div class="compose-box"><label class="sr-only" for="draft">ข้อความถึงแอดมิน</label><textarea id="draft" placeholder="ข้อความ…" rows="1" maxlength="2000" enterkeyhint="enter" disabled></textarea><button class="send" id="send" type="submit" aria-label="ส่งข้อความ" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6"/></svg></button></div><div class="compose-caption"><span>ส่วนตัว · เฉพาะคุณและแอดมิน</span><span id="count">0/2000</span></div></form>
   </section>
 </main>
+<dialog class="personal-settings" id="personalSettings" aria-labelledby="settingsTitle">
+  <div class="settings-header"><h2 id="settingsTitle">ตั้งค่าส่วนตัว</h2><button type="button" id="closeSettings" class="icon-button" aria-label="ปิดตั้งค่า">×</button></div>
+  <div class="settings-account"><span class="account-avatar" id="accountInitial">ฉัน</span><div><strong id="accountName">ยังไม่ได้เชื่อมบัญชี</strong><small id="accountRole">บัญชีโรงเรียนของคุณ</small></div></div>
+  <div class="settings-section"><h3>การแสดงผล</h3><label class="setting-row" for="themePreference"><span>ธีม</span><select id="themePreference"><option value="system">ตามเครื่อง</option><option value="light">สว่าง</option><option value="dark">มืด</option></select></label><label class="setting-row" for="textPreference"><span>ขนาดข้อความ</span><select id="textPreference"><option value="normal">ปกติ</option><option value="large">ใหญ่</option></select></label></div>
+  <div class="settings-section"><p class="settings-note">การแสดงผลจะถูกบันทึกไว้บนอุปกรณ์นี้</p><a id="connectAccount" class="primary-link" href="https://system.banpadengschool.ac.th/account.html">เชื่อมบัญชีโรงเรียน</a><button id="logout" type="button" class="logout-button hidden">ออกจากบัญชี</button></div>
+</dialog>
 <script type="module" src="/chat.js"></script>
 </body></html>
