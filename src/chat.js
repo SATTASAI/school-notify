@@ -17,7 +17,8 @@ export async function chatRoute(req, env, ctx, { verifyLinkToken, hmac, authoriz
   if (method !== 'GET' && req.headers.get('origin') && req.headers.get('origin') !== url.origin) return json({ error: 'forbidden' }, 403);
   if (method === 'POST' && !(req.headers.get('content-type') || '').startsWith('application/json')) return json({ error: 'ต้องส่งข้อมูล JSON' }, 415);
   const cookie = /(?:^|;\s*)notify_chat=([^;]+)/.exec(req.headers.get('cookie') || '')?.[1];
-  const identity = cookie ? await verifyLinkToken(env, cookie) : null;
+  const frameToken = req.headers.get('x-chat-token');
+  const identity = frameToken ? await verifyLinkToken(env, frameToken) : cookie ? await verifyLinkToken(env, cookie) : null;
   const admin = path.startsWith('/api/chat/admin/');
   if (admin && !authorized) return json({ error: 'unauthorized' }, 401);
   if (path === '/api/chat/session' && method === 'POST') {

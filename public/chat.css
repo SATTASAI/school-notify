@@ -71,3 +71,9 @@ body.user-chat{--surface:#fff;--canvas:#f3f6fa;--ink:#24344b;--muted:#8492a4;--l
 .user-chat .logout-button{border:1px solid var(--line);border-radius:12px;background:transparent;color:#cc6161;width:100%;padding:10px;font:inherit;font-size:13px;cursor:pointer}
 @media(max-width:700px){.user-chat .thread-header{padding:12px 17px;padding-top:max(12px,env(safe-area-inset-top));min-height:76px;gap:10px}.user-chat .school-avatar{width:42px;height:42px;border-radius:15px}.user-chat .header-copy h1{font-size:15px}.user-chat .header-copy p{font-size:10px}.user-chat .timeline{padding:0 12px 18px}.user-chat .message-content{max-width:84%}.user-chat .bubble{padding:10px 14px}.user-chat .message .mini-avatar{width:24px;height:24px;font-size:7px;margin-bottom:21px}.user-chat .composer{padding:10px 12px max(9px,env(safe-area-inset-bottom))}.user-chat .compose-caption{font-size:8px}.user-chat .personal-settings{margin:auto auto 14px;border-radius:24px;max-height:calc(var(--app-height,100dvh) - 28px)}.user-chat .welcome{min-height:55vh}.user-chat .day{margin:20px auto 24px}}
 @media(prefers-reduced-motion:reduce){.user-chat .send{transition:none}}
+/* The parent school app owns the viewport and safe areas when the room is in its bottom sheet. */
+.user-chat.embedded-chat .messenger{height:100%;max-height:100%}
+.user-chat.embedded-chat .thread-header{padding-top:12px;min-height:72px}
+.user-chat.embedded-chat .composer{padding-bottom:8px}
+.user-chat.embedded-chat #connectAccount,.user-chat.embedded-chat #logout{display:none!important}
+.user-chat.embedded-chat .personal-settings{max-height:calc(100% - 28px)}

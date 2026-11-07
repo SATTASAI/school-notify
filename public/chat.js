@@ -1,6 +1,19 @@
 const $ = id => document.getElementById(id);
 const admin = document.body.dataset.admin === 'true';
 const qs = new URLSearchParams(location.search);
+const schoolOrigin = 'https://system.banpadengschool.ac.th';
+const embedded = !admin && qs.get('embedded') === '1' && window.parent !== window;
+let embeddedVisible = !embedded;
+function notifySchool(type){if(embedded)window.parent.postMessage({type},schoolOrigin);}
+if(embedded){
+  document.body.classList.add('embedded-chat');
+  window.addEventListener('message',event=>{
+    if(event.origin!==schoolOrigin || event.source!==window.parent || event.data?.type!=='school-chat-visibility')return;
+    embeddedVisible=event.data.visible===true;
+    if(!embeddedVisible){saveDraft();$('draft').blur();}
+    else if(active)load();
+  });
+}
 let token = admin ? sessionStorage.getItem('notifyToken') || '' : '';
 let ref = '', rooms = [], messages = [], before = null, more = false, busy = false, active = false, pendingId = null, loading = false;
 const cache = new Map(), readThrough = new Map();
@@ -10,7 +23,7 @@ const max = admin ? 1000 : 2000;
 const fmtTime = t => new Date(t).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
 const fmtDate = t => new Date(t).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});
 async function api(path, options = {}) {
-  const res = await fetch('/api/chat/' + (admin?'admin/':'') + path, { ...options, headers:{'content-type':'application/json',...(admin?{authorization:'Bearer '+token}:{}),...options.headers} });
+  const res = await fetch('/api/chat/' + (admin?'admin/':'') + path, { ...options, headers:{'content-type':'application/json',...(admin?{authorization:'Bearer '+token}:{}),...(embedded&&qs.get('t')?{'x-chat-token':qs.get('t')}:{}),...options.headers} });
   const data = await res.json();
   if (!res.ok) { const e = new Error(data.error || 'โหลดข้อมูลไม่สำเร็จ'); e.status=res.status; throw e; }
   return data;
@@ -19,7 +32,7 @@ function state(text,error=false){ $('connection').textContent=text; $('connectio
 function saveDraft(){if(!ref)return;try{sessionStorage.setItem('notifyDraft:'+ref,$('draft').value);}catch{}}
 function storedDraft(){try{return sessionStorage.getItem('notifyDraft:'+ref)||'';}catch{return '';}}
 function dateLabel(t){if(admin)return fmtDate(t);const date=new Date(t),today=new Date(),yesterday=new Date();yesterday.setDate(today.getDate()-1);return date.toDateString()===today.toDateString()?'วันนี้':date.toDateString()===yesterday.toDateString()?'เมื่อวาน':fmtDate(t);}
-function gate(){ active=false; $('connectAccount')?.classList.remove('hidden'); $('logout')?.classList.add('hidden'); $('gate').classList.remove('hidden'); $('composer').classList.add('hidden'); state('ยังไม่ได้เชื่อมบัญชี'); }
+function gate(){ active=false; notifySchool('school-chat-error'); $('connectAccount')?.classList.remove('hidden'); $('logout')?.classList.add('hidden'); $('gate').classList.remove('hidden'); $('composer').classList.add('hidden'); state('ยังไม่ได้เชื่อมบัญชี'); }
 function nearBottom(){return $('timeline').scrollHeight - $('timeline').scrollTop - $('timeline').clientHeight < 100;}
 function safeLink(value){try{const u=new URL(value,location.origin);return ['http:','https:'].includes(u.protocol)?u.href:null;}catch{return null;}}
 function node(tag,cls,text){const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;}
@@ -46,7 +59,7 @@ function render(scroll=false){
   if(messageId&&!focused){const target=$('message-school-'+messageId);if(target){target.scrollIntoView({block:'center'});target.classList.add('highlight');focused=true;}}
 }
 async function markRead(){
-  if(!active||document.hidden||(!admin&&$('personalSettings')?.open)||(matchMedia('(max-width:700px)').matches&&!$('messenger').classList.contains('room-open'))||!nearBottom())return;
+  if(!active||document.hidden||!embeddedVisible||(!admin&&$('personalSettings')?.open)||(matchMedia('(max-width:700px)').matches&&!$('messenger').classList.contains('room-open'))||!nearBottom())return;
   const at=messages.at(-1)?.created_at;if(!at)return;
   const key=(admin?'admin:':'user:')+ref, previous=readThrough.get(key)||0;
   if(previous>=at)return;
@@ -54,6 +67,7 @@ async function markRead(){
   try{await api('read'+(admin?'?ref='+encodeURIComponent(ref):''),{method:'POST',body:JSON.stringify({at})});}
   catch(error){if(readThrough.get(key)===at)readThrough.set(key,previous);throw error;}
   $('unread')?.classList.add('hidden');
+  notifySchool('school-chat-read');
 }
 async function load(older=false){
   if(loading||!active||(admin&&!ref))return;loading=true;
@@ -121,17 +135,18 @@ async function init(){
   if(admin){if(!token){gate();return;}await loadRooms();active=true;state('เลือกผู้ใช้เพื่ออ่านและตอบข้อความ');}
   else{
     if(!qs.has('t')&&['role','ref','label'].some(k=>qs.has(k))){location.replace('/setup?'+qs);return;}
-    const link=qs.get('t');if(link){$('manifestLink').href='/manifest.webmanifest?t='+encodeURIComponent(link);await api('session',{method:'POST',body:JSON.stringify({token:link})});history.replaceState(null,'',messageId?'/?chat=1&message='+encodeURIComponent(messageId):(qs.get('chat')==='1'?'/?chat=1':'/'));}
+    const link=qs.get('t');if(link){$('manifestLink').href='/manifest.webmanifest?t='+encodeURIComponent(link);await api('session',{method:'POST',body:JSON.stringify({token:link})});const clean=new URL(location.href);clean.searchParams.delete('t');history.replaceState(null,'',clean.pathname+clean.search);}
     active=true;$('messenger').classList.add('room-open');await load();
     if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{});
   }
   $('draft').disabled=false;updateDraft();
+  if(active)notifySchool('school-chat-ready');
 }
 if(!admin) initPersonalSettings();
 init().catch(e=>{gate();state(e.message,true);});
-setInterval(()=>{if(document.hidden||!active)return;if(admin)loadRooms().catch(e=>state(e.message,true));load();},15000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&active){if(admin)loadRooms().catch(()=>{});load();}});
-window.addEventListener('online',()=>load());
+setInterval(()=>{if(document.hidden||!active||!embeddedVisible)return;if(admin)loadRooms().catch(e=>state(e.message,true));load();},15000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&active&&embeddedVisible){if(admin)loadRooms().catch(()=>{});load();}});
+window.addEventListener('online',()=>{if(embeddedVisible)load();});
 window.addEventListener('offline',()=>state('ออฟไลน์ · ข้อความร่างของคุณยังอยู่',true));
 
 function initPersonalSettings(){
@@ -154,7 +169,7 @@ function initPersonalSettings(){
   dialog.addEventListener('click',e=>{if(e.target===dialog){const rect=dialog.getBoundingClientRect();if(e.clientX<rect.left||e.clientX>rect.right||e.clientY<rect.top||e.clientY>rect.bottom)dialog.close();}});
   $('send').addEventListener('pointerdown',e=>{if(document.activeElement===$('draft'))e.preventDefault();});
   const viewport=window.visualViewport;
-  function resize(){const stick=nearBottom();document.documentElement.style.setProperty('--app-height',(viewport?.height||window.innerHeight)+'px');if(stick)requestAnimationFrame(()=>{$('timeline').scrollTop=$('timeline').scrollHeight;});}
+  function resize(){const stick=nearBottom();document.documentElement.style.setProperty('--app-height',(embedded?window.innerHeight:(viewport?.height||window.innerHeight))+'px');if(stick)requestAnimationFrame(()=>{$('timeline').scrollTop=$('timeline').scrollHeight;});}
   viewport?.addEventListener('resize',resize);window.addEventListener('resize',resize);resize();
   if(typeof ResizeObserver!=='undefined')new ResizeObserver(()=>{$('messenger').style.setProperty('--composer-height',$('composer').offsetHeight+'px');}).observe($('composer'));
 }
