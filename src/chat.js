@@ -51,6 +51,21 @@ export async function chatRoute(req, env, ctx, { verifyLinkToken, hmac, authoriz
       FROM conversations c ORDER BY COALESCE(last_message_at,c.created_at) DESC LIMIT 500`).all();
     return json({ conversations: results });
   }
+  // School server checks one authenticated user's badge without needing a browser chat cookie.
+  // Do not create a conversation or mark messages read just because the bottom bar is visible.
+  if (path === '/api/chat/admin/unread' && method === 'GET') {
+    if (!/^u:\d+$/.test(ref || '')) return json({ error: 'invalid ref' }, 400);
+    const room = await env.DB.prepare('SELECT role,user_read_at FROM conversations WHERE ref=?').bind(ref).first();
+    const requestedRole = url.searchParams.get('role');
+    const role = room?.role || (['teacher','parent','student'].includes(requestedRole) ? requestedRole : 'teacher');
+    const result = await env.DB.prepare(`SELECT EXISTS(
+      SELECT 1 FROM notifications
+      WHERE status IN ('queued','sending','done') AND send_at<=?3 AND send_at>?4
+      AND (roles='all' OR instr(','||roles||',', ','||?2||',')>0)
+      AND (refs IS NULL OR EXISTS(SELECT 1 FROM json_each(notifications.refs) WHERE value=?1))
+    ) AS unread`).bind(ref,role,Date.now(),room?.user_read_at || 0).first();
+    return json({ unread: Boolean(result.unread) });
+  }
   if (!ref) return json({ error: 'missing ref' }, 400);
   const room = await env.DB.prepare('SELECT * FROM conversations WHERE ref=?').bind(ref).first();
   if (!room) return json({ error: 'ไม่พบห้องข้อความ' }, 404);

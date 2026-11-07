@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "test": "node scripts/test-webpush.mjs && node scripts/test-chat.mjs && node scripts/test-notification-click.mjs && node scripts/test-chat-app.mjs"
+    "test": "node scripts/test-webpush.mjs && node scripts/test-chat.mjs && node scripts/test-notification-click.mjs && node scripts/test-chat-app.mjs && node scripts/test-chat-unread.mjs"
   },
   "devDependencies": {
     "jsdom": "^26.1.0",
