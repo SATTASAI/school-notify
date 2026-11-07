@@ -130,7 +130,7 @@ async function testPush(req, env) {
   const b = await readJson(req);
   const row = b?.endpoint && (await env.DB.prepare('SELECT * FROM subscriptions WHERE endpoint = ?').bind(b.endpoint).first());
   if (!row) return json({ error: 'ยังไม่ได้ลงทะเบียน' }, 404);
-  const payload = JSON.stringify({ title: 'ทดสอบการแจ้งเตือน', body: 'เครื่องนี้รับการแจ้งเตือนจากโรงเรียนได้แล้ว ✅', url: '/', tag: 'test' });
+  const payload = JSON.stringify({ title: 'ทดสอบการแจ้งเตือน', body: 'เครื่องนี้รับการแจ้งเตือนจากโรงเรียนได้แล้ว ✅', url: 'https://notify.banpadengschool.ac.th/?chat=1', tag: 'test' });
   const status = await sendPush(row, payload, await getVapid(env), subject(env)).catch(() => 0);
   return json({ ok: status >= 200 && status < 300, status });
 }
@@ -215,7 +215,7 @@ async function processBatch(env, id) {
 
   if (results.length) {
     const vapid = await getVapid(env);
-    const payload = JSON.stringify({ title: n.title, body: n.body, url: '/?message=' + n.id, tag: `n${n.id}`, id: n.id, actions: n.actions ? JSON.parse(n.actions) : undefined });
+    const payload = JSON.stringify({ title: n.title, body: n.body, url: 'https://notify.banpadengschool.ac.th/?chat=1&message=' + n.id, tag: `n${n.id}`, id: n.id, actions: n.actions ? JSON.parse(n.actions) : undefined });
     const statuses = await Promise.all(results.map((r) => sendPush(r, payload, vapid, subject(env)).catch(() => 0)));
     const t = now();
     const stmts = [];

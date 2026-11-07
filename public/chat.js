@@ -103,9 +103,9 @@ async function init(){
   if(admin){if(!token){gate();return;}await loadRooms();active=true;state('เลือกผู้ใช้เพื่ออ่านและตอบข้อความ');}
   else{
     if(!qs.has('t')&&['role','ref','label'].some(k=>qs.has(k))){location.replace('/setup?'+qs);return;}
-    const link=qs.get('t');if(link){$('manifestLink').href='/manifest.webmanifest?t='+encodeURIComponent(link);$('settingsLink').href=$('threadSettings').href='/setup?t='+encodeURIComponent(link);await api('session',{method:'POST',body:JSON.stringify({token:link})});history.replaceState(null,'',messageId?'/?message='+encodeURIComponent(messageId):'/');}
-    active=true;$('logout').classList.remove('hidden');if(messageId)$('messenger').classList.add('room-open');await load();
-    if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
+    const link=qs.get('t');if(link){$('manifestLink').href='/manifest.webmanifest?t='+encodeURIComponent(link);$('settingsLink').href=$('threadSettings').href='/setup?t='+encodeURIComponent(link);await api('session',{method:'POST',body:JSON.stringify({token:link})});history.replaceState(null,'',messageId?'/?chat=1&message='+encodeURIComponent(messageId):(qs.get('chat')==='1'?'/?chat=1':'/'));}
+    active=true;$('logout').classList.remove('hidden');if(messageId||qs.get('chat')==='1')$('messenger').classList.add('room-open');await load();
+    if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(reg=>reg.update()).catch(()=>{});
   }
   $('draft').disabled=false;updateDraft();
 }

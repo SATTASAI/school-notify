@@ -112,7 +112,8 @@ async function init() {
   if (!linkInfo && !open) { $('formCard').classList.add('hidden'); $('closedCard').classList.remove('hidden'); $('iosGuide').classList.add('hidden'); $('btnSub').classList.add('hidden'); $('manualFields').classList.add('hidden'); }
   if (isIOS && !standalone) { $('iosGuide').classList.remove('hidden'); }
   if (!supported) { if (!isIOS) $('unsupported').classList.remove('hidden'); $('btnSub').disabled = true; return; }
-  reg = await navigator.serviceWorker.register('/sw.js');
+  reg = await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
+  reg.update().catch(() => {});
   publicKey = (await (await fetch('/api/vapid-public-key')).json()).publicKey;
   const sub = await reg.pushManager.getSubscription();
   if (sub && Notification.permission === 'granted') {
