@@ -87,3 +87,25 @@ body.user-chat{--surface:#fff;--canvas:#f3f6fa;--ink:#24344b;--muted:#8492a4;--l
 .message .bubble a:focus-visible{outline:3px solid #ffca5c;outline-offset:3px}
 
 .user-chat[data-theme=dark] .message:not(.outgoing) .bubble .detail-link{color:#174eaa}
+
+/* Shared user-room polish: used unchanged by Notify and System's embedded room. */
+body.user-chat{font-family:-apple-system,BlinkMacSystemFont,"Sarabun",system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;--message-font-size:15px;--muted:#6e8097}
+.user-chat[data-theme=dark]{--muted:#a4b2c6}
+.user-chat[data-text-size=large]{--message-font-size:18px}
+.user-chat .header-copy{min-width:0}
+.user-chat .header-copy h1{font-size:16px;letter-spacing:-.2px}
+.user-chat .header-copy p{font-size:12px}
+.user-chat .sender,.user-chat .message time{font-size:11px}
+.user-chat .bubble{line-height:1.65;border-radius:18px 18px 18px 6px}
+.user-chat .outgoing .bubble{border-radius:18px 18px 6px 18px}
+.user-chat .icon-button{width:44px;height:44px}
+.user-chat .send{width:40px;height:40px}
+.user-chat button,.user-chat select{touch-action:manipulation;transition:background-color 160ms ease,transform 180ms cubic-bezier(.22,.8,.25,1)}
+.user-chat .icon-button:active,.user-chat .older:active{transform:scale(.94)}
+.user-chat .compose-box{transition:border-color 160ms ease,box-shadow 160ms ease}
+.user-chat .compose-box:focus-within{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 8%,transparent)}
+@media(prefers-reduced-motion:no-preference){
+ .user-chat .personal-settings[open]{animation:settings-in 180ms cubic-bezier(.22,.8,.25,1)}
+ @keyframes settings-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+}
+@media(prefers-reduced-motion:reduce){.user-chat button,.user-chat select,.user-chat .compose-box{transition:none}.user-chat .icon-button:active,.user-chat .older:active{transform:none}}

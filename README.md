@@ -155,3 +155,8 @@ PC ใช้เมนูด้านข้างและจัดพื้น�
 มือถือใช้พื้นที่เลื่อนภายใน console พร้อมจำตำแหน่งแยกแท็บและรักษาแบบร่าง ไม่โหลดประวัติซ้ำเมื่อสลับกลับโดยไม่จำเป็น รายชื่อห้องที่ข้อมูลไม่เปลี่ยนจะคง DOM เดิมขณะ polling และข้อความเดิมไม่เล่น animation ซ้ำเมื่อมีข้อความใหม่ การปรับคีย์บอร์ดรวมงานผ่าน animation frame เพื่อลด layout work
 
 ทดสอบ lifecycle ของ dialog/animation การยกเลิก animation ที่ถูกขัดจังหวะ reduced motion การจำ scroll และความคงที่ของรายการห้องด้วย DOM; ยังไม่ใช่ผลทดสอบ frame rate บน iPhone จริง
+
+
+### Shared room UI and deployment updates (Patch 1.2.4)
+
+`public/index.html`, `chat.css` and `chat.js` are the single user-room implementation, including the signed embedded room in System. Admin-only styles do not apply to this room. Cloudflare `UI_VERSION` metadata is injected into the room HTML; the client compares `/api/ui-version` every 60 seconds and on resume. It reloads only when visible, idle, without a draft or open settings, and at the end of history. HTML is served without storage and CSS/JS require revalidation. System keeps its own bottom bar and iframe container. Deploy Notify to publish room updates to both entry points.
