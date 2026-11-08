@@ -15,3 +15,18 @@ assert.equal(old.status,201);
 for(let i=0;i<30;i++){if(db.prepare('SELECT COUNT(*) n FROM deliveries').get().n)break;await new Promise(r=>setImmediate(r));}
 assert.deepEqual(db.prepare('SELECT subscription_id FROM deliveries').all().map(r=>r.subscription_id),[1]);
 console.log('✓ New connection: welcome only to new device, repeat connection idempotent, old notifications exclude newly joined devices');
+// Full signed subscribe flow sends only welcome once; reconnecting the same endpoint stays silent.
+{
+ const {db,env,token}=await fixture(),jobs=[],pushes=[];
+ const key=await crypto.subtle.generateKey({name:'ECDH',namedCurve:'P-256'},true,['deriveBits']);
+ const p256dh=Buffer.from(await crypto.subtle.exportKey('raw',key.publicKey)).toString('base64url');
+ const request=()=>new Request('https://notify.test/api/subscribe',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({subscription:{endpoint:'https://push.example.test/new-device',keys:{p256dh,auth:Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString('base64url')}},token:token(),exclusive:true})});
+ const original=globalThis.fetch;globalThis.fetch=async(url)=>{assert.equal(String(url),'https://push.example.test/new-device');pushes.push(url);return new Response('',{status:201});};
+ try{
+  assert.equal((await worker.fetch(request(),env,{waitUntil(p){jobs.push(p);}})).status,200);await Promise.all(jobs);
+  assert.equal(pushes.length,1);assert.equal(db.prepare("SELECT COUNT(*) n FROM notifications WHERE source GLOB 'welcome:*'").get().n,1);
+  assert.equal(db.prepare('SELECT status FROM deliveries').get().status,'ok');
+  assert.equal((await worker.fetch(request(),env,{waitUntil(p){jobs.push(p);}})).status,200);await Promise.all(jobs);assert.equal(pushes.length,1);
+ }finally{globalThis.fetch=original;}
+ console.log('✓ Signed subscription integration: one encrypted welcome Push, successful delivery, no duplicate on reconnect');
+}
