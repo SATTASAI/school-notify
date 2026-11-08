@@ -77,3 +77,11 @@ body.user-chat{--surface:#fff;--canvas:#f3f6fa;--ink:#24344b;--muted:#8492a4;--l
 .user-chat.embedded-chat .composer{padding-bottom:8px}
 .user-chat.embedded-chat #connectAccount,.user-chat.embedded-chat #logout{display:none!important}
 .user-chat.embedded-chat .personal-settings{max-height:calc(100% - 28px)}
+
+/* Explicit link contrast in incoming, outgoing and dark message bubbles. */
+.message .bubble a{color:#174eaa;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;overflow-wrap:anywhere}
+.message.outgoing .bubble a{color:#fff}
+.message .bubble .detail-link{display:block;background:#fff;color:#174eaa;border:1px solid #c9d9f0;border-radius:10px;padding:9px 12px;margin-top:10px;line-height:1.5;font-weight:600;white-space:normal;text-decoration:underline}
+.message.outgoing .bubble .detail-link{background:#fff;color:#174eaa;border-color:#fff}
+.user-chat[data-theme=dark] .message:not(.outgoing) .bubble a{color:#a8ccff}
+.message .bubble a:focus-visible{outline:3px solid #ffca5c;outline-offset:3px}
