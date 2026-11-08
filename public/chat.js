@@ -32,7 +32,7 @@ function state(text,error=false){ $('connection').textContent=text; $('connectio
 function saveDraft(){if(!ref)return;try{sessionStorage.setItem('notifyDraft:'+ref,$('draft').value);}catch{}}
 function storedDraft(){try{return sessionStorage.getItem('notifyDraft:'+ref)||'';}catch{return '';}}
 function dateLabel(t){if(admin)return fmtDate(t);const date=new Date(t),today=new Date(),yesterday=new Date();yesterday.setDate(today.getDate()-1);return date.toDateString()===today.toDateString()?'วันนี้':date.toDateString()===yesterday.toDateString()?'เมื่อวาน':fmtDate(t);}
-function gate(){ active=false; notifySchool('school-chat-error'); $('connectAccount')?.classList.remove('hidden'); $('logout')?.classList.add('hidden'); $('gate').classList.remove('hidden'); $('composer').classList.add('hidden'); state('ยังไม่ได้เชื่อมบัญชี'); }
+function gate(){ if(admin)document.body.classList.remove('admin-authenticated');active=false; notifySchool('school-chat-error'); $('connectAccount')?.classList.remove('hidden'); $('logout')?.classList.add('hidden'); $('gate').classList.remove('hidden'); $('composer').classList.add('hidden'); state('ยังไม่ได้เชื่อมบัญชี'); }
 function nearBottom(){return $('timeline').scrollHeight - $('timeline').scrollTop - $('timeline').clientHeight < 100;}
 function safeLink(value){try{const u=new URL(value,location.origin);return ['http:','https:'].includes(u.protocol)?u.href:null;}catch{return null;}}
 function node(tag,cls,text){const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;}
@@ -133,6 +133,7 @@ async function load(older=false){
 function renderRooms(){
   const list=$('roomList');list.replaceChildren();const search=$('search').value.toLowerCase(),role=$('roomRole')?.value;
   const visible=rooms.filter(r=>(r.label+' '+r.ref+' '+(r.preview||'')).toLowerCase().includes(search)&&(!unreadOnly||r.unread>0)&&(!role||r.role===role));
+  document.querySelectorAll('[data-nav-unread]').forEach(b=>{const count=rooms.filter(r=>r.unread>0).length;b.textContent=count>99?'99+':String(count);b.classList.toggle('hidden',!count);});
   if($('roomSummary'))$('roomSummary').textContent=visible.length+' จาก '+rooms.length+' ห้อง · ยังไม่อ่าน '+rooms.filter(r=>r.unread>0).length+' ห้อง';
   for(const room of visible){
     const row=node('button','conversation'+(ref===room.ref?' active':''));row.append(node('span','avatar',room.label.slice(0,2)));
@@ -188,6 +189,7 @@ $('openRoom')?.addEventListener('click',()=>{$('messenger').classList.add('room-
 $('logout').onclick=async()=>{if(admin){const t=sessionStorage.getItem('notifyToken')||'';if(t.startsWith('pk_'))await fetch('/api/passkeys/logout',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+t},body:'{}'}).catch(()=>{});sessionStorage.removeItem('notifyToken');location.href='/admin';}else{await fetch('/api/chat/logout',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});location.href='/';}};
 $('search')?.addEventListener('input',renderRooms);
 if(admin){
+ document.querySelector('[data-admin-route=messages]')?.addEventListener('click',e=>{e.preventDefault();$('messenger').classList.remove('room-open');loadRooms().catch(error=>state(error.message,true));});
  $('allRooms')?.addEventListener('click',()=>{unreadOnly=false;$('allRooms').classList.add('active');$('unreadRooms').classList.remove('active');renderRooms();});
  $('unreadRooms')?.addEventListener('click',()=>{unreadOnly=true;$('allRooms').classList.remove('active');$('unreadRooms').classList.add('active');renderRooms();});
  $('roomRole')?.addEventListener('change',renderRooms);
@@ -197,7 +199,7 @@ if(admin){
 }
 
 async function init(){
-  if(admin){if(!token){gate();return;}await loadRooms();active=true;state('เลือกผู้ใช้เพื่ออ่านและตอบข้อความ');if(qs.get('ref')){const selected=rooms.find(r=>r.ref===qs.get('ref'));if(selected)await selectRoom(selected);else state('ผู้ใช้นี้ยังไม่ได้เปิดห้องข้อความ',true);}}
+  if(admin){if(!token){gate();return;}await loadRooms();active=true;document.body.classList.add('admin-authenticated');state('เลือกผู้ใช้เพื่ออ่านและตอบข้อความ');if(qs.get('ref')){const selected=rooms.find(r=>r.ref===qs.get('ref'));if(selected)await selectRoom(selected);else state('ผู้ใช้นี้ยังไม่ได้เปิดห้องข้อความ',true);}}
   else{
     if(!qs.has('t')&&['role','ref','label'].some(k=>qs.has(k))){location.replace('/setup?'+qs);return;}
     const link=qs.get('t');if(link){$('manifestLink').href='/manifest.webmanifest?t='+encodeURIComponent(link);await api('session',{method:'POST',body:JSON.stringify({token:link})});const clean=new URL(location.href);clean.searchParams.delete('t');history.replaceState(null,'',clean.pathname+clean.search);}
