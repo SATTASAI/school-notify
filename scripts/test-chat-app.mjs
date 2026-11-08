@@ -66,4 +66,13 @@ const linked=a.w.eval('appendMessageBody')(linksNode,notice);a.w.eval('appendMes
 assert.equal(linksNode.querySelectorAll('a').length,3);
 assert.equal(linksNode.querySelectorAll('a.message-link').length,1);
 assert.deepEqual([...linksNode.querySelectorAll('a')].map(n=>n.textContent),[renewal,'อัปเดตข้อมูล','เปิดลิงก์ ↗']);
+// Existing renewal messages discard stale detail/account links and expose only KSP.
+for(const view of [user,a]){
+ const bubble=view.w.document.createElement('div');
+ const message={kind:'school',source:'system',title:'ต่ออายุใบประกอบวิชาชีพ',body:'เหลือ 86 วัน\nต่ออายุ: '+renewal+'\nหลังต่ออายุ กรุณาอัปเดตข้อมูล',
+ url:'https://system.banpadengschool.ac.th/notification.html?key=leave:1',actions:JSON.stringify([{title:'เปิดใบลา',url:'https://school.test/leave.html'},{title:'อัปเดตข้อมูล',url:'https://school.test/account.html'}])};
+ const seen=view.w.eval('appendMessageBody')(bubble,message);view.w.eval('appendMessageActions')(bubble,message,seen);
+ assert.equal(bubble.querySelectorAll('a').length,1);assert.equal(bubble.querySelector('a').href,renewal);
+ assert.equal(bubble.querySelector('a').textContent,'ต่ออายุใบประกอบวิชาชีพ ↗');assert(!bubble.textContent.includes('ต่ออายุ:'));
+}
 assert.equal(errors.length,0);for(const x of [user,a,signedout,frame]){x.dom.window.close();x.parent?.close();}console.log('✓ App UI: single room, no outgoing links, personal settings, appearance persistence, viewport resize, instant send, draft recovery, retry identity, embedded visibility/draft/scroll retention and admin compatibility');
