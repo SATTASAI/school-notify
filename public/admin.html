@@ -1,142 +1,17 @@
 <!doctype html>
 <html lang="th" data-passkey-auth="notify">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ส่งแจ้งเตือน · แอดมิน</title>
-<meta name="robots" content="noindex">
-<link rel="icon" href="/icon-192.png">
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css">
-</head>
-<body>
-<div class="wrap">
-  <header>
-    <img src="/icon-192.png" alt="">
-    <div><h1>ส่งแจ้งเตือน</h1><p class="sub">แอดมิน · โรงเรียนบ้านป่าเด็ง</p></div>
-  </header>
-
-  <div id="login" class="card">
-    <label for="pw">รหัสผ่านแอดมิน</label>
-    <input id="pw" type="password" autocomplete="current-password">
-    <div class="row"><button id="btnLogin">เข้าสู่ระบบ</button><button id="passkeyLogin" data-error="loginMsg" hidden>Face ID / Passkey</button></div>
-    <p id="loginMsg" class="status err hidden" style="margin-top:12px"></p>
-  </div>
-
-  <div id="app" class="hidden"><div class="card"><a href="/passkeys.html">ตั้งค่า Face ID / Passkey</a></div>
-    <div class="card"><h2>ข้อความตอบกลับจากผู้ใช้</h2><p class="sub">อ่านและตอบกลับในห้องเดียวต่อผู้ใช้</p><div class="row"><a href="/inbox" style="display:inline-block;background:#1e66d2;color:white;padding:10px 16px;border-radius:10px;text-decoration:none">เปิดกล่องข้อความ</a></div></div>
-    <div class="card">
-      <h2>ผู้รับทั้งหมด</h2>
-      <div class="stats">
-        <div><b id="sTotal">–</b><span>เครื่อง</span></div>
-        <div><b id="sTeacher">–</b><span>ครู</span></div>
-        <div><b id="sParent">–</b><span>ผู้ปกครอง</span></div>
-        <div><b id="sStudent">–</b><span>นักเรียน</span></div>
-      </div>
-      <p class="hint">ลิงก์สมัครรับแจ้งเตือน: <a id="subLink" href="/">/</a></p>
-    </div>
-
-    <div class="card">
-      <h2>สร้างการแจ้งเตือน</h2>
-      <label for="title">หัวข้อ</label>
-      <input id="title" type="text" maxlength="120" placeholder="เช่น ประกาศหยุดเรียน">
-      <label for="body">ข้อความ</label>
-      <textarea id="body" maxlength="1000" placeholder="รายละเอียด"></textarea>
-      <label for="url">ลิงก์เมื่อแตะ <span class="sub">(ไม่บังคับ)</span></label>
-      <input id="url" type="text" placeholder="https://school-announcement.banpadengschool.ac.th/...">
-      <label>ส่งถึง</label>
-      <div class="chips" id="roles">
-        <label class="chip"><input type="checkbox" value="teacher" checked> ครู</label>
-        <label class="chip"><input type="checkbox" value="parent" checked> ผู้ปกครอง</label>
-        <label class="chip"><input type="checkbox" value="student" checked> นักเรียน</label>
-      </div>
-      <label for="refs">เฉพาะรหัส <span class="sub">(ไม่บังคับ คั่นด้วยจุลภาค)</span></label>
-      <input id="refs" type="text" placeholder="เว้นว่าง = ส่งทุกคนในกลุ่มที่เลือก">
-      <label for="sendAt">ตั้งเวลาส่ง <span class="sub">(เว้นว่าง = ส่งทันที)</span></label>
-      <input id="sendAt" type="datetime-local">
-      <div class="row"><button id="btnSend">ส่ง</button><button id="btnLogout" class="ghost">ออกจากระบบ</button></div>
-      <p id="sendMsg" class="status hidden" style="margin-top:12px"></p>
-    </div>
-
-    <div class="card">
-      <h2>ประวัติ <button id="btnReload" class="ghost" style="float:right;padding:4px 10px">รีเฟรช</button></h2>
-      <div style="overflow-x:auto"><table>
-        <thead><tr><th>เวลา</th><th>หัวข้อ</th><th>ถึง</th><th>สถานะ</th><th></th></tr></thead>
-        <tbody id="history"></tbody>
-      </table></div>
-    </div>
-  </div>
-</div>
-<script src="/passkeys-client.js"></script>
-<script>
-const $ = (id) => document.getElementById(id);
-let token = sessionStorage.getItem('notifyToken') || '';
-const ROLE_TH = { teacher: 'ครู', parent: 'ผู้ปกครอง', student: 'นักเรียน', all: 'ทุกคน' };
-const STATUS_TH = { scheduled: 'ตั้งเวลา', queued: 'รอส่ง', sending: 'กำลังส่ง', done: 'ส่งแล้ว', cancelled: 'ยกเลิก' };
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const fmt = (t) => new Date(t).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' });
-
-async function api(path, opts = {}) {
-  const r = await fetch(path, { ...opts, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token, ...(opts.headers || {}) } });
-  const j = await r.json().catch(() => ({}));
-  if (r.status === 401) { logout(); throw new Error('รหัสผ่านไม่ถูกต้อง'); }
-  if (!r.ok) throw new Error(j.error || 'เกิดข้อผิดพลาด');
-  return j;
-}
-function msg(el, text, kind) { el.textContent = text; el.className = 'status ' + (kind || ''); }
-function logout() { if(token.startsWith('pk_')) SchoolPasskeys.api('/logout',{}).catch(()=>{}); token = ''; sessionStorage.removeItem('notifyToken'); $('app').classList.add('hidden'); $('login').classList.remove('hidden'); }
-
-SchoolPasskeys.mount($('passkeyLogin'),async result=>{token=result.token;sessionStorage.setItem('notifyToken',token);await enter();});
-async function enter() {
-  await api('/api/auth');
-  $('login').classList.add('hidden'); $('app').classList.remove('hidden');
-  $('subLink').textContent = location.origin + '/'; $('subLink').href = '/';
-  loadAll();
-}
-async function loadAll() {
-  const s = await api('/api/stats');
-  $('sTotal').textContent = s.total; $('sTeacher').textContent = s.teacher; $('sParent').textContent = s.parent; $('sStudent').textContent = s.student;
-  const { notifications } = await api('/api/notifications');
-  $('history').innerHTML = notifications.map((n) => {
-    const to = n.roles === 'all' ? 'ทุกคน' : n.roles.split(',').map((r) => ROLE_TH[r]).join(', ');
-    const refs = n.refs ? '<br><span class="sub">' + esc(JSON.parse(n.refs).join(', ')) + '</span>' : '';
-    const count = n.status === 'done' ? ` ${n.sent}/${n.total}` : n.status === 'sending' ? ` ${n.ok_now}/${n.total}` : '';
-    const cancel = n.status === 'scheduled' ? `<button class="danger" style="padding:4px 10px" data-cancel="${n.id}">ยกเลิก</button>` : '';
-    return `<tr><td>${fmt(n.send_at)}</td><td><b>${esc(n.title)}</b><br><span class="sub">${esc(n.body).slice(0, 80)}</span><br><span class="sub">จาก: ${esc(n.source)}</span></td><td>${to}${refs}</td><td><span class="badge ${n.status}">${STATUS_TH[n.status] || n.status}${count}</span></td><td>${cancel}</td></tr>`;
-  }).join('') || '<tr><td colspan="5" class="sub">ยังไม่มีรายการ</td></tr>';
-}
-
-$('btnLogin').onclick = async () => {
-  token = $('pw').value; sessionStorage.setItem('notifyToken', token);
-  try { await enter(); } catch (e) { $('loginMsg').classList.remove('hidden'); $('loginMsg').textContent = e.message; }
-};
-$('pw').onkeydown = (e) => { if (e.key === 'Enter') $('btnLogin').click(); };
-$('btnLogout').onclick = logout;
-$('btnReload').onclick = () => loadAll().catch((e) => alert(e.message));
-$('history').onclick = async (e) => {
-  const id = e.target.dataset.cancel; if (!id || !confirm('ยกเลิกรายการนี้?')) return;
-  try { await api(`/api/notifications/${id}/cancel`, { method: 'POST' }); loadAll(); } catch (err) { alert(err.message); }
-};
-$('btnSend').onclick = async () => {
-  const roles = [...document.querySelectorAll('#roles input:checked')].map((i) => i.value);
-  const el = $('sendMsg');
-  if (!$('title').value.trim()) return msg(el, 'กรุณาใส่หัวข้อ', 'err');
-  if (!roles.length) return msg(el, 'กรุณาเลือกผู้รับ', 'err');
-  const sendAt = $('sendAt').value ? new Date($('sendAt').value).getTime() : undefined;
-  $('btnSend').disabled = true;
-  try {
-    const r = await api('/api/notifications', { method: 'POST', body: JSON.stringify({
-      title: $('title').value, body: $('body').value, url: $('url').value,
-      roles: roles.length === 3 ? ['all'] : roles, refs: $('refs').value, sendAt, source: 'admin',
-    }) });
-    msg(el, r.status === 'scheduled' ? `ตั้งเวลาส่งแล้ว (${fmt(r.sendAt)})` : 'กำลังส่ง…', 'ok');
-    ['title', 'body', 'url', 'refs', 'sendAt'].forEach((k) => { $(k).value = ''; });
-    setTimeout(() => loadAll().catch(() => {}), 1500);
-  } catch (e) { msg(el, e.message, 'err'); }
-  $('btnSend').disabled = false;
-};
-
-if (token) enter().catch(() => logout());
-</script>
-</body>
-</html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>ศูนย์จัดการ · School Notify</title><link rel="icon" href="/icon-192.png"><link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/admin-ui.css"></head>
+<body class="admin-console">
+<section id="login" class="login-panel"><div class="login-brand"><img src="/icon-192.png" alt=""><span>School Notify<small>โรงเรียนบ้านป่าเด็ง</small></span></div><h1>ยินดีต้อนรับกลับ</h1><p class="muted">เข้าสู่ศูนย์จัดการแจ้งเตือนและข้อความของโรงเรียน</p><label for="pw">รหัสผ่านแอดมิน</label><input id="pw" type="password" autocomplete="current-password"><div class="actions"><button id="btnLogin">เข้าสู่ระบบ</button><button id="passkeyLogin" class="secondary" data-error="loginMsg" hidden>Face ID / Passkey</button></div><p id="loginMsg" class="status error" role="alert" hidden></p></section>
+<div id="app" class="console-shell hidden">
+<aside class="console-nav"><a class="console-brand" href="/admin"><img src="/icon-192.png" alt=""><span>School Notify<small>ศูนย์จัดการโรงเรียน</small></span></a><span class="nav-label">พื้นที่ทำงาน</span><nav aria-label="เมนูแอดมิน"><button data-tab="overview" class="active"><span>◫</span> ภาพรวม</button><button data-tab="compose"><span>＋</span> สร้างแจ้งเตือน</button><button data-tab="history"><span>≡</span> ประวัติการส่ง</button><button data-tab="devices"><span>▣</span> ผู้รับและอุปกรณ์</button><a href="/inbox"><span>✉</span> กล่องข้อความ <b id="navUnread" class="pill hidden">0</b></a></nav><div class="nav-bottom"><a href="/passkeys.html">Face ID / Passkey ↗</a><a href="/setup">ตั้งค่ารับแจ้งเตือน ↗</a><button id="btnLogout" class="secondary">ออกจากระบบ</button></div></aside>
+<main class="console-main"><header class="console-header"><div><p class="eyebrow">SCHOOL NOTIFY / ADMIN</p><h1 id="pageTitle">ภาพรวมการแจ้งเตือน</h1><p id="pageSubtitle" class="muted">ติดตามการส่งและข้อความจากผู้ใช้ในที่เดียว</p></div><div class="actions"><button id="btnReload" class="secondary">↻ รีเฟรช</button><button data-tab="compose">＋ สร้างแจ้งเตือน</button></div></header><p id="globalMsg" class="status hidden" role="status"></p><p id="updatedAt" class="updated-at"></p>
+<section data-panel="overview"><div class="metrics"><article><span>อุปกรณ์ที่เชื่อมต่อ</span><strong id="sTotal">–</strong><small>จำนวนเครื่อง ไม่ใช่จำนวนบุคคล</small></article><article><span>ตั้งเวลารอส่ง</span><strong id="sScheduled">–</strong><small>การแจ้งเตือนที่ยังยกเลิกได้</small></article><article><span>อยู่ระหว่างส่ง</span><strong id="sProcessing">–</strong><small>รอส่งและกำลังดำเนินการ</small></article><article><span>ห้องที่ยังไม่อ่าน</span><strong id="sUnread">–</strong><a href="/inbox">เปิดกล่องข้อความ →</a></article></div><div class="overview-grid"><section class="panel"><div class="panel-heading"><div><h2>กิจกรรมล่าสุด</h2><p class="muted">รายการล่าสุดจากทุกระบบ</p></div><button data-tab="history" class="text-button">ดูประวัติทั้งหมด →</button></div><div id="recent"></div></section><section class="panel"><h2>การเชื่อมต่อผู้รับ</h2><div id="roleStats" class="role-stats"></div><p class="muted">ผู้ใช้หนึ่งคนอาจมีหลายเครื่องหรือหลายบทบาท</p><a href="/inbox" class="quick-link">✉ อ่านและตอบกลับข้อความ <span>→</span></a><button data-tab="devices" class="quick-link">▣ ตรวจอุปกรณ์และปัญหาการส่ง <span>→</span></button><p class="muted">การตอบรับจากบริการ Push ไม่ยืนยันว่าผู้ใช้เปิดอ่านแล้ว</p></section></div></section>
+<section data-panel="compose" class="hidden"><div class="compose-grid"><form id="composeForm" class="panel"><h2>สร้างการแจ้งเตือน</h2><p class="muted">ตรวจข้อความและกลุ่มผู้รับก่อนส่ง</p><label for="title">หัวข้อ <small id="titleCount">0/120</small></label><input id="title" maxlength="120" required placeholder="เช่น แจ้งกำหนดประชุมประจำเดือน"><label for="body">รายละเอียด <small id="bodyCount">0/1000</small></label><textarea id="body" maxlength="1000" rows="6" placeholder="พิมพ์ข้อความที่ต้องการแจ้ง"></textarea><label for="url">ลิงก์ปลายทาง <span class="muted">(ไม่บังคับ)</span></label><input id="url" placeholder="https://… หรือ /หน้าภายในระบบ"><fieldset><legend>กลุ่มผู้รับ</legend><div class="chips" id="roles"><label><input type="checkbox" value="teacher" checked> ครู</label><label><input type="checkbox" value="parent" checked> ผู้ปกครอง</label><label><input type="checkbox" value="student" checked> นักเรียน</label></div></fieldset><label for="recipientSelect">เลือกผู้รับรายบุคคลจากอุปกรณ์ที่เชื่อมแล้ว</label><div class="input-action"><select id="recipientSelect"><option value="">เลือกผู้รับเพื่อเพิ่มรหัส…</option></select><button type="button" id="addRecipient" class="secondary">เพิ่ม</button></div><label for="refs">รหัสผู้รับเฉพาะ <span class="muted">(คั่นด้วยจุลภาค)</span></label><input id="refs" placeholder="เว้นว่าง = ทุกคนในกลุ่มที่เลือก"><p class="muted">หากระบุรหัส ผู้รับต้องตรงทั้งรหัสและกลุ่มที่เลือก</p><label for="sendAt">วันเวลาส่ง <span class="muted">(เว้นว่าง = ส่งทันที)</span></label><input id="sendAt" type="datetime-local"><p class="muted">เวลาประเทศไทย (Asia/Bangkok)</p><div class="actions"><button id="btnSend" type="submit">ตรวจสอบก่อนส่ง →</button><button id="clearDraft" type="button" class="secondary">ล้างแบบร่าง</button></div><p id="sendMsg" class="status hidden" role="status"></p></form><aside class="preview-column"><div class="panel"><p class="eyebrow">ตัวอย่างข้อความ</p><div class="push-preview"><div class="preview-brand"><img src="/icon-192.png" alt=""> School Notify <small>ตอนนี้</small></div><h3 id="previewTitle">หัวข้อการแจ้งเตือน</h3><p id="previewBody">ข้อความของคุณจะแสดงที่นี่</p><span id="previewLink" class="muted"></span></div><dl class="detail-grid"><dt>ส่งถึง</dt><dd id="previewAudience">ครู ผู้ปกครอง นักเรียน</dd><dt>เวลา</dt><dd id="previewTime">ส่งทันที</dd></dl><p class="muted">ตัวอย่างใช้ตรวจเนื้อหา รูปแบบจริงขึ้นอยู่กับอุปกรณ์ผู้รับ</p></div></aside></div></section>
+<section data-panel="history" class="hidden"><div class="panel"><div class="panel-heading"><div><h2>ประวัติการส่ง</h2><p id="historyTotal" class="muted"></p></div></div><div class="filters"><input id="historySearch" aria-label="ค้นหาประวัติ" placeholder="ค้นหาหัวข้อ ข้อความ หรือระบบต้นทาง…"><select id="historyStatus" aria-label="กรองสถานะ"><option value="">ทุกสถานะ</option><option value="scheduled">ตั้งเวลา</option><option value="queued">รอส่ง</option><option value="sending">กำลังส่ง</option><option value="done">จบรอบส่ง</option><option value="cancelled">ยกเลิก</option></select></div><div id="history" class="history-list"></div><div class="pagination"><button id="historyPrev" class="secondary">← ก่อนหน้า</button><span id="historyPage"></span><button id="historyNext" class="secondary">ถัดไป →</button></div></div></section>
+<section data-panel="devices" class="hidden"><div class="panel"><div class="panel-heading"><div><h2>ผู้รับและอุปกรณ์</h2><p id="deviceTotal" class="muted"></p></div><a id="subLink" href="/setup" class="text-button">หน้าตั้งค่ารับแจ้งเตือน ↗</a></div><div class="filters"><input id="deviceSearch" aria-label="ค้นหาอุปกรณ์" placeholder="ค้นหาชื่อ รหัสผู้รับ หรืออุปกรณ์…"><select id="deviceStatus" aria-label="กรองอุปกรณ์"><option value="">ทุกอุปกรณ์</option><option value="fail">มีประวัติส่งผิดพลาด</option></select></div><div id="devices" class="device-list"></div></div></section>
+</main></div>
+<dialog id="detailDialog" class="admin-dialog"><div class="dialog-heading"><div><p class="eyebrow">รายละเอียดการแจ้งเตือน</p><h2 id="detailTitle">รายละเอียด</h2></div><button id="closeDetail" class="secondary" aria-label="ปิดรายละเอียด">✕</button></div><div id="detailContent"></div><div class="filters"><label for="deliveryStatus">ผลการส่งรายเครื่อง</label><select id="deliveryStatus"><option value="">ทั้งหมด</option><option value="ok">บริการ Push รับแล้ว</option><option value="fail">ส่งไม่สำเร็จ</option><option value="pending">รอส่ง</option></select></div><div id="deliveries"></div><div class="pagination"><button id="deliveryPrev" class="secondary">← ก่อนหน้า</button><span id="deliveryPage"></span><button id="deliveryNext" class="secondary">ถัดไป →</button></div><div class="actions"><button id="copyNotification" class="secondary">ใช้เป็นแบบร่างใหม่</button><button id="cancelNotification" class="danger">ยกเลิกการตั้งเวลา</button></div><p id="detailMsg" class="status hidden" role="status"></p></dialog>
+<dialog id="confirmDialog" class="admin-dialog confirm-dialog"><h2>ตรวจสอบก่อนส่ง</h2><div id="confirmContent"></div><p class="muted">ข้อความที่ส่งทันทีเรียกคืนไม่ได้ โปรดตรวจผู้รับและเนื้อหาให้ถูกต้อง</p><div class="actions"><button id="confirmSend">ยืนยันส่ง</button><button id="closeConfirm" class="secondary">กลับไปแก้ไข</button></div></dialog>
+<script src="/passkeys-client.js"></script><script src="/admin.js"></script>
+</body></html>

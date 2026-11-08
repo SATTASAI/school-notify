@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "test": "node scripts/test-webpush.mjs && node scripts/test-chat.mjs && node scripts/test-notification-click.mjs && node scripts/test-chat-app.mjs && node scripts/test-chat-unread.mjs && node scripts/test-chat-frame-auth.mjs && node scripts/test-passkeys.mjs && node scripts/test-passkeys-client.mjs"
+    "test": "node scripts/test-webpush.mjs && node scripts/test-chat.mjs && node scripts/test-notification-click.mjs && node scripts/test-chat-app.mjs && node scripts/test-chat-unread.mjs && node scripts/test-chat-frame-auth.mjs && node scripts/test-passkeys.mjs && node scripts/test-passkeys-client.mjs && node scripts/test-admin-console.mjs && node scripts/test-welcome.mjs"
   },
   "devDependencies": {
     "jsdom": "^26.1.0",
