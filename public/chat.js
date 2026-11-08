@@ -18,7 +18,7 @@ let token = admin ? sessionStorage.getItem('notifyToken') || '' : '';
 let ref = '', rooms = [], messages = [], before = null, more = false, busy = false, active = false, pendingId = null, loading = false;
 const cache = new Map(), readThrough = new Map();
 const messageId = qs.get('message');
-let focused = false, optimistic = null, unreadOnly=false;
+let focused = false, optimistic = null, unreadOnly=false,lastRoomSignature='';
 const max = admin ? 1000 : 2000;
 const fmtTime = t => new Date(t).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
 const fmtDate = t => new Date(t).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});
@@ -74,12 +74,12 @@ function appendMessageActions(bubble,message,linked){
   }
 }
 function render(scroll=false){
-  const fragment=document.createDocumentFragment(); let day='', previous=null;
+  const fragment=document.createDocumentFragment(),existingIds=new Set([...$('messages').children].map(el=>el.id)),newRows=[];let day='', previous=null;
   for(const m of [...messages,...(optimistic?[optimistic]:[])]){
     const date=dateLabel(m.created_at); if(date!==day){fragment.append(node('div','day',date));day=date;}
     const outgoing=admin?m.kind==='school':m.kind==='user';
     const grouped=!admin && previous && previous.kind===m.kind && m.created_at-previous.created_at<300000 && dateLabel(previous.created_at)===date;
-    const row=node('article','message'+(outgoing?' outgoing':'')+(grouped?' grouped':'')+(m.pending?' pending':''));row.id='message-'+m.kind+'-'+m.id;
+    const row=node('article','message'+(outgoing?' outgoing':'')+(grouped?' grouped':'')+(m.pending?' pending':''));row.id='message-'+m.kind+'-'+m.id;if(admin&&existingIds.size&&!existingIds.has(row.id))newRows.push(row);
     if(!outgoing)row.append(node('span','mini-avatar',admin?'ผู้ใช้':'บปด'));
     const content=node('div','message-content');
     if(!outgoing)content.append(node('div','sender',admin?(rooms.find(r=>r.ref===ref)?.label||'ผู้ใช้'):(m.source==='admin-reply'||m.source?.startsWith('reply:'))?'แอดมินโรงเรียน':'โรงเรียนบ้านป่าเด็ง'));
@@ -90,7 +90,7 @@ function render(scroll=false){
     if(admin&&m.kind==='school'&&!isRenewalMessage(m)){const report=node('a','detail-link','ตรวจผลการส่งรายเครื่อง ↗');report.href='/admin?notification='+encodeURIComponent(m.id);report.target='_blank';report.rel='noopener noreferrer';bubble.append(report);}
     content.append(bubble,node('time','',m.pending?'กำลังส่ง…':fmtTime(m.created_at)+(outgoing?(admin?' · ส่งแล้ว':' · ส่งแล้ว ✓'):'')));row.append(content);fragment.append(row);previous=m;
   }
-  $('messages').replaceChildren(fragment);if(admin)filterMessages();$('welcome').classList.toggle('hidden',messages.length>0||Boolean(optimistic));$('older').classList.toggle('hidden',!more);
+  $('messages').replaceChildren(fragment);if(admin){filterMessages();for(const row of newRows)window.NotifyAdminUI?.reveal(row,1);}$('welcome').classList.toggle('hidden',messages.length>0||Boolean(optimistic));$('older').classList.toggle('hidden',!more);
   if(!admin && $('preview')){const last=messages.at(-1);$('preview').textContent=last?(last.kind==='user'?'คุณ: ':'')+(last.body||last.title):'ประกาศและข้อความจากโรงเรียน';}
   if(scroll){$('timeline').scrollTop=$('timeline').scrollHeight;$('newMessages').classList.add('hidden');}
   if(messageId&&!focused){const target=$('message-school-'+messageId);if(target){target.scrollIntoView({block:'center'});target.classList.add('highlight');focused=true;}}
@@ -131,7 +131,9 @@ async function load(older=false){
   }catch(e){state(e.message+' · จะลองเชื่อมต่ออีกครั้ง',true);if(e.status===401)gate();}finally{loading=false;if(!admin&&active&&!$('connection').classList.contains('error'))$('connection').classList.add('quiet');if(admin&&selected!==ref)load();}
 }
 function renderRooms(){
-  const list=$('roomList');list.replaceChildren();const search=$('search').value.toLowerCase(),role=$('roomRole')?.value;
+  const search=$('search').value.toLowerCase(),role=$('roomRole')?.value;
+  const signature=JSON.stringify([rooms,ref,search,role,unreadOnly]);if(signature===lastRoomSignature)return;lastRoomSignature=signature;
+  const list=$('roomList');list.replaceChildren();
   const visible=rooms.filter(r=>(r.label+' '+r.ref+' '+(r.preview||'')).toLowerCase().includes(search)&&(!unreadOnly||r.unread>0)&&(!role||r.role===role));
   document.querySelectorAll('[data-nav-unread]').forEach(b=>{const count=rooms.filter(r=>r.unread>0).length;b.textContent=count>99?'99+':String(count);b.classList.toggle('hidden',!count);});
   if($('roomSummary'))$('roomSummary').textContent=visible.length+' จาก '+rooms.length+' ห้อง · ยังไม่อ่าน '+rooms.filter(r=>r.unread>0).length+' ห้อง';
@@ -162,7 +164,7 @@ async function selectRoom(room){
   roomDetails(room);if($('showRoomDetails'))$('showRoomDetails').disabled=false;if($('findMessages'))$('findMessages').disabled=false;
   if($('messageSearch'))$('messageSearch').value='';
   $('draft').value=sessionStorage.getItem('notifyDraft:'+ref)||'';updateDraft();
-  $('messenger').classList.add('room-open');$('welcome').classList.remove('hidden');$('messages').replaceChildren();
+  const wasOpen=$('messenger').classList.contains('room-open');$('messenger').classList.add('room-open');if(!wasOpen&&admin)window.NotifyAdminUI?.reveal(document.querySelector('.thread'),1);$('welcome').classList.remove('hidden');$('messages').replaceChildren();
   await load();await loadRooms();
 }
 function updateDraft(){const d=$('draft');d.style.height='auto';d.style.height=Math.min(140,d.scrollHeight)+'px';$('count').textContent=d.value.length+'/'+max;$('count').classList.toggle('near-limit',d.value.length>=max-200);$('send').disabled=!active||busy||(admin&&!ref)||!d.value.trim();}
