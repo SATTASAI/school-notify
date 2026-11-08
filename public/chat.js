@@ -36,6 +36,20 @@ function gate(){ active=false; notifySchool('school-chat-error'); $('connectAcco
 function nearBottom(){return $('timeline').scrollHeight - $('timeline').scrollTop - $('timeline').clientHeight < 100;}
 function safeLink(value){try{const u=new URL(value,location.origin);return ['http:','https:'].includes(u.protocol)?u.href:null;}catch{return null;}}
 function node(tag,cls,text){const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;}
+function appendMessageBody(bubble,message){
+  const body=String(message.body||'');
+  // Only the official renewal URL in school system messages becomes a link.
+  // Keep user text and all other URLs as text, and never parse message HTML.
+  const matches=message.kind==='school'&&message.source==='system'
+    ? [...body.matchAll(/https:\/\/selfservice\.ksp\.or\.th\/(?=$|\s)/g)] : [];
+  let offset=0;
+  for(const match of matches){
+    bubble.append(document.createTextNode(body.slice(offset,match.index)));
+    const link=node('a','',match[0]);link.href=match[0];link.target='_blank';link.rel='noopener noreferrer';
+    bubble.append(link);offset=match.index+match[0].length;
+  }
+  bubble.append(document.createTextNode(body.slice(offset)));
+}
 function render(scroll=false){
   const fragment=document.createDocumentFragment(); let day='', previous=null;
   for(const m of [...messages,...(optimistic?[optimistic]:[])]){
@@ -48,7 +62,7 @@ function render(scroll=false){
     if(!outgoing)content.append(node('div','sender',admin?($('accountName')?.textContent||'ผู้ใช้'):(m.source==='admin-reply'||m.source?.startsWith('reply:'))?'แอดมินโรงเรียน':'โรงเรียนบ้านป่าเด็ง'));
     const bubble=node('div','bubble');
     if(m.title&&!(m.source==='admin-reply'||m.source?.startsWith('reply:')))bubble.append(node('strong','',m.title));
-    bubble.append(document.createTextNode(m.body));
+    appendMessageBody(bubble,m);
     let actions=[];try{actions=JSON.parse(m.actions||'[]');}catch{}
     if(admin) for(const a of [...(m.url?[{title:'ดูรายละเอียด ↗',url:m.url}]:[]),...actions]){const href=safeLink(a.url);if(!href)continue;const link=node('a','detail-link',a.title);link.href=href;link.target='_blank';link.rel='noopener noreferrer';bubble.append(link);}
     content.append(bubble,node('time','',m.pending?'กำลังส่ง…':fmtTime(m.created_at)+(outgoing?(admin?' · ส่งแล้ว':' · ส่งแล้ว ✓'):'')));row.append(content);fragment.append(row);previous=m;
