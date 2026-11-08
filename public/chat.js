@@ -165,7 +165,7 @@ let readTimer;
 $('timeline').onscroll=()=>{if(nearBottom()){$('newMessages').classList.add('hidden');clearTimeout(readTimer);readTimer=setTimeout(()=>markRead().catch(()=>{}),300);}};
 if($('back'))$('back').onclick=()=>{$('messenger').classList.remove('room-open');if(admin)loadRooms().catch(()=>{});};
 $('openRoom')?.addEventListener('click',()=>{$('messenger').classList.add('room-open');markRead().catch(()=>{});});
-$('logout').onclick=async()=>{if(admin){sessionStorage.removeItem('notifyToken');location.href='/admin';}else{await fetch('/api/chat/logout',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});location.href='/';}};
+$('logout').onclick=async()=>{if(admin){const t=sessionStorage.getItem('notifyToken')||'';if(t.startsWith('pk_'))await fetch('/api/passkeys/logout',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+t},body:'{}'}).catch(()=>{});sessionStorage.removeItem('notifyToken');location.href='/admin';}else{await fetch('/api/chat/logout',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});location.href='/';}};
 $('search')?.addEventListener('input',renderRooms);
 async function init(){
   if(admin){if(!token){gate();return;}await loadRooms();active=true;state('เลือกผู้ใช้เพื่ออ่านและตอบข้อความ');}

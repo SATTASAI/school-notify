@@ -116,3 +116,11 @@ npm test   # ตรวจการเข้ารหัส aes128gcm และ�
 โหมด `?embedded=1&t=<signed account link>` ใช้ภายใน iframe จาก `system.banpadengschool.ac.th` เพื่อคง bottom bar ของแอปโรงเรียน ส่ง signed token ในหน่วยความจำผ่าน `X-Chat-Token` สำหรับ Chat API จึงไม่ต้องพึ่งการยอมรับ cookie ภายใน iframe และไม่เก็บ token ใน localStorage Token ที่ปลอมหรือหมดอายุจะไม่ fallback ไปบัญชีจาก cookie อื่น
 
 แชทรับสถานะแสดง/ย่อเฉพาะจาก parent window ของ origin ระบบโรงเรียน เมื่อย่อจะหยุด polling/บันทึกการอ่านและเก็บร่างไว้ เมื่อกลับมาใช้ DOM เดิมจึงคงตำแหน่งอ่านไว้ บัญชีและการออกจากระบบจัดการจาก system ส่วนหน้าตั้งค่าการแสดงผลยังเปิดภายในแชทเดิม
+
+## Face ID / Passkey — Patch 1.2
+
+เข้าสู่ระบบด้วยรหัสผ่านเดิม แล้วเปิด **ตั้งค่า Passkey** เพื่อเพิ่มอุปกรณ์ ครั้งต่อไปกด **Face ID / Passkey** ได้ รหัสผ่านเดิมยังใช้สำรองได้ บัญชีแอดมินแยกจากบัญชีโรงเรียน และหมุน ADMIN_PASSWORD จะยกเลิก Passkey/session แอดมินเดิม
+
+รัน `npm ci` ก่อนทดสอบ/build ตาราง Passkey สร้างแบบ additive ในคำขอแรก ใช้ HTTPS; ไม่มีการเก็บภาพใบหน้า ลายนิ้วมือ หรือ private key
+
+[รายละเอียด วิธีใช้ ขอบเขต และผลตรวจสอบ](https://github.com/SATTASAI/banpadeng-school-db/blob/main/docs/passkeys.md)

@@ -1,3 +1,4 @@
+import {handleNotifyPasskeys,passkeyAdminSession} from './passkeys.js';
 import { chatRoute } from './chat.js';
 import { generateVapidKeys, sendPush, b64uEncode, b64uDecode } from './webpush.js';
 
@@ -38,9 +39,9 @@ function safeEqual(a, b) {
   return diff === 0;
 }
 
-function isAuthorized(req, env) {
+async function isAuthorized(req, env) {
   const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
-  return safeEqual(token, env.API_KEY) || safeEqual(token, env.ADMIN_PASSWORD);
+  return safeEqual(token, env.API_KEY) || safeEqual(token, env.ADMIN_PASSWORD) || await passkeyAdminSession(req,env);
 }
 
 // เก็บเป็นชุดแบบ ",a,b," เพื่อค้นด้วย LIKE ได้
@@ -356,7 +357,8 @@ export default {
     const m = req.method;
 
     try {
-      const chat = await chatRoute(req, env, ctx, { verifyLinkToken, hmac, authorized: isAuthorized(req, env), createNotification });
+      if(p.startsWith('/api/passkeys'))return await handleNotifyPasskeys(req,env,safeEqual);
+      const chat = await chatRoute(req, env, ctx, { verifyLinkToken, hmac, authorized: await isAuthorized(req, env), createNotification });
       if (chat) return chat;
       if (p === '/manifest.webmanifest') return manifest(url);
       if (p === '/api/config' && m === 'GET') return json({ openSubscribe: env.OPEN_SUBSCRIBE === 'true' });
@@ -374,7 +376,7 @@ export default {
       }
 
       if (p.startsWith('/api/')) {
-        if (!isAuthorized(req, env)) return json({ error: 'unauthorized' }, 401);
+        if (!await isAuthorized(req, env)) return json({ error: 'unauthorized' }, 401);
         if ((p === '/api/notifications' || p === '/api/send') && m === 'POST') return await createNotification(req, env, ctx);
         if (p === '/api/notifications' && m === 'GET') return await listNotifications(env);
         const cm = p.match(/^\/api\/notifications\/(\d+)\/cancel$/);

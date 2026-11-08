@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="th">
+<html lang="th" data-passkey-auth="notify">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -19,11 +19,11 @@
   <div id="login" class="card">
     <label for="pw">รหัสผ่านแอดมิน</label>
     <input id="pw" type="password" autocomplete="current-password">
-    <div class="row"><button id="btnLogin">เข้าสู่ระบบ</button></div>
+    <div class="row"><button id="btnLogin">เข้าสู่ระบบ</button><button id="passkeyLogin" data-error="loginMsg" hidden>Face ID / Passkey</button></div>
     <p id="loginMsg" class="status err hidden" style="margin-top:12px"></p>
   </div>
 
-  <div id="app" class="hidden">
+  <div id="app" class="hidden"><div class="card"><a href="/passkeys.html">ตั้งค่า Face ID / Passkey</a></div>
     <div class="card"><h2>ข้อความตอบกลับจากผู้ใช้</h2><p class="sub">อ่านและตอบกลับในห้องเดียวต่อผู้ใช้</p><div class="row"><a href="/inbox" style="display:inline-block;background:#1e66d2;color:white;padding:10px 16px;border-radius:10px;text-decoration:none">เปิดกล่องข้อความ</a></div></div>
     <div class="card">
       <h2>ผู้รับทั้งหมด</h2>
@@ -67,6 +67,7 @@
     </div>
   </div>
 </div>
+<script src="/passkeys-client.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 let token = sessionStorage.getItem('notifyToken') || '';
@@ -83,8 +84,9 @@ async function api(path, opts = {}) {
   return j;
 }
 function msg(el, text, kind) { el.textContent = text; el.className = 'status ' + (kind || ''); }
-function logout() { token = ''; sessionStorage.removeItem('notifyToken'); $('app').classList.add('hidden'); $('login').classList.remove('hidden'); }
+function logout() { if(token.startsWith('pk_')) SchoolPasskeys.api('/logout',{}).catch(()=>{}); token = ''; sessionStorage.removeItem('notifyToken'); $('app').classList.add('hidden'); $('login').classList.remove('hidden'); }
 
+SchoolPasskeys.mount($('passkeyLogin'),async result=>{token=result.token;sessionStorage.setItem('notifyToken',token);await enter();});
 async function enter() {
   await api('/api/auth');
   $('login').classList.add('hidden'); $('app').classList.remove('hidden');
