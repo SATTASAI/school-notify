@@ -44,10 +44,10 @@ function appendMessageBody(bubble,message){
     body=body.replace(/ต่ออายุ:\s*https:\/\/selfservice\.ksp\.or\.th\//g,'').replace(/https:\/\/selfservice\.ksp\.or\.th\/(?=$|\s)/g,'').trim();
     bubble.append(document.createTextNode(body));return new Set();
   }
-  // Only the official renewal URL in school system messages becomes a link.
-  // Keep user text and all other URLs as text, and never parse message HTML.
+  // Link only approved school work and renewal destinations in system messages.
+  // Keep user text and other URLs as text; never parse message HTML.
   const matches=message.kind==='school'&&message.source==='system'
-    ? [...body.matchAll(/https:\/\/selfservice\.ksp\.or\.th\/(?=$|\s)/g)] : [];
+    ? [...body.matchAll(/https:\/\/(?:selfservice\.ksp\.or\.th\/|system\.banpadengschool\.ac\.th\/dmcreport\/\?view=notices)(?=$|\s)/g)] : [];
   let offset=0;const linked=new Set();
   for(const match of matches){
     bubble.append(document.createTextNode(body.slice(offset,match.index)));

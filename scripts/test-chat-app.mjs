@@ -22,7 +22,7 @@ async function ui(file,url,admin=false,mobile=false,embedded=false){
   }
   const headers={...opts.headers,...(cookie&&!embedded?{cookie}:{})};const r=await worker.fetch(new Request(new URL(path,w.location),{...opts,headers}),env,{waitUntil(p){p.catch(e=>errors.push(e));}});const set=r.headers.get('set-cookie');if(set)cookie=set.split(';')[0];return r;
  };
- w.addEventListener('error',e=>errors.push(e.error));w.eval(script+'\nwindow.__chatTesting=()=>({loading,busy});');return {w,dom,parent,posted,timers,get reads(){return readRequests;},get requests(){return requests;},signal(visible,origin='https://system.banpadengschool.ac.th',source=parent){w.dispatchEvent(new w.MessageEvent('message',{origin,source,data:{type:'school-chat-visibility',visible}}));},$:id=>w.document.getElementById(id),requestIds,fail(){fail=true;},hold(){hold=true;},release(){release();},resize(height){w.visualViewport.height=height;resize();}};
+ w.addEventListener('error',e=>errors.push(e.error));w.eval(script+'\nwindow.__chatTesting=()=>({loading,busy});window.__setMessagesForTest=items=>{messages=items;render();};');return {w,dom,parent,posted,timers,get reads(){return readRequests;},get requests(){return requests;},signal(visible,origin='https://system.banpadengschool.ac.th',source=parent){w.dispatchEvent(new w.MessageEvent('message',{origin,source,data:{type:'school-chat-visibility',visible}}));},$:id=>w.document.getElementById(id),requestIds,fail(){fail=true;},hold(){hold=true;},release(){release();},resize(height){w.visualViewport.height=height;resize();}};
 }
 async function until(fn){for(let i=0;i<150;i++){if(fn())return;await new Promise(r=>setTimeout(r,5));}throw new Error('UI state timed out');}
 function draft(x,text){x.$('draft').value=text;x.$('draft').dispatchEvent(new x.w.Event('input'));}
@@ -55,6 +55,16 @@ for(const message of [
  {kind:'school',source:'admin-reply',body:renewal},
  {kind:'school',source:'system',body:'https://selfservice.ksp.or.th.evil.test/ https://selfservice.ksp.or.th/@evil https://evil.test/'},
 ]){const n=user.w.document.createElement('div');user.w.eval('appendMessageBody')(n,message);assert.equal(n.querySelectorAll('a').length,0);assert.equal(n.textContent,message.body);}
+// Transfer links render in the actual recipient chat, including embedded/mobile.
+const transferUrl='https://system.banpadengschool.ac.th/dmcreport/?view=notices';
+for(const view of [user,frame]){
+ view.w.__setMessagesForTest([{id:991,kind:'school',source:'system',title:'แจ้งย้ายเข้าใหม่',body:'ตรวจสอบแจ้งย้าย: '+transferUrl,created_at:Date.now()}]);
+ const link=view.$('messages').querySelector('a.message-link');assert(link);assert.equal(link.href,transferUrl);assert.equal(link.target,'_blank');
+}
+for(const body of [transferUrl+'&redirect=https://evil.test/', 'https://system.banpadengschool.ac.th.evil.test/dmcreport/?view=notices', 'https://system.banpadengschool.ac.th/dmcreport/?view=other']){
+ const el=user.w.document.createElement('div');user.w.eval('appendMessageBody')(el,{kind:'school',source:'system',body});assert.equal(el.querySelectorAll('a').length,0);
+}
+const plain=user.w.document.createElement('div');user.w.eval('appendMessageBody')(plain,{kind:'user',source:'system',body:transferUrl});assert.equal(plain.querySelectorAll('a').length,0);
 // Link destinations are unique across inline body links, actions and the detail URL.
 const linksNode=a.w.document.createElement('div');
 const notice={kind:'school',source:'system',body:'ต่ออายุ: '+renewal+'\n'+renewal,
