@@ -42,13 +42,26 @@ function appendMessageBody(bubble,message){
   // Keep user text and all other URLs as text, and never parse message HTML.
   const matches=message.kind==='school'&&message.source==='system'
     ? [...body.matchAll(/https:\/\/selfservice\.ksp\.or\.th\/(?=$|\s)/g)] : [];
-  let offset=0;
+  let offset=0;const linked=new Set();
   for(const match of matches){
     bubble.append(document.createTextNode(body.slice(offset,match.index)));
-    const link=node('a','',match[0]);link.href=match[0];link.target='_blank';link.rel='noopener noreferrer';
-    bubble.append(link);offset=match.index+match[0].length;
+    if(!linked.has(match[0])){
+      const link=node('a','message-link',match[0]);link.href=match[0];link.target='_blank';link.rel='noopener noreferrer';
+      bubble.append(link);linked.add(match[0]);
+    }
+    offset=match.index+match[0].length;
   }
   bubble.append(document.createTextNode(body.slice(offset)));
+  return linked;
+}
+function appendMessageActions(bubble,message,linked){
+  let actions=[];try{const parsed=JSON.parse(message.actions||'[]');if(Array.isArray(parsed))actions=parsed;}catch{}
+  for(const action of [...actions,...(message.url?[{title:'ดูรายละเอียด ↗',url:message.url}]:[])]){
+    if(!action?.url)continue;
+    const href=safeLink(action.url);if(!href||linked.has(href))continue;
+    const link=node('a','detail-link',String(action.title||'').trim()||'เปิดลิงก์ ↗');
+    link.href=href;link.target='_blank';link.rel='noopener noreferrer';bubble.append(link);linked.add(href);
+  }
 }
 function render(scroll=false){
   const fragment=document.createDocumentFragment(); let day='', previous=null;
@@ -62,9 +75,8 @@ function render(scroll=false){
     if(!outgoing)content.append(node('div','sender',admin?($('accountName')?.textContent||'ผู้ใช้'):(m.source==='admin-reply'||m.source?.startsWith('reply:'))?'แอดมินโรงเรียน':'โรงเรียนบ้านป่าเด็ง'));
     const bubble=node('div','bubble');
     if(m.title&&!(m.source==='admin-reply'||m.source?.startsWith('reply:')))bubble.append(node('strong','',m.title));
-    appendMessageBody(bubble,m);
-    let actions=[];try{actions=JSON.parse(m.actions||'[]');}catch{}
-    if(admin) for(const a of [...(m.url?[{title:'ดูรายละเอียด ↗',url:m.url}]:[]),...actions]){const href=safeLink(a.url);if(!href)continue;const link=node('a','detail-link',a.title);link.href=href;link.target='_blank';link.rel='noopener noreferrer';bubble.append(link);}
+    const linked=appendMessageBody(bubble,m);
+    if(admin)appendMessageActions(bubble,m,linked);
     content.append(bubble,node('time','',m.pending?'กำลังส่ง…':fmtTime(m.created_at)+(outgoing?(admin?' · ส่งแล้ว':' · ส่งแล้ว ✓'):'')));row.append(content);fragment.append(row);previous=m;
   }
   $('messages').replaceChildren(fragment);$('welcome').classList.toggle('hidden',messages.length>0||Boolean(optimistic));$('older').classList.toggle('hidden',!more);
