@@ -36,8 +36,14 @@ function gate(){ active=false; notifySchool('school-chat-error'); $('connectAcco
 function nearBottom(){return $('timeline').scrollHeight - $('timeline').scrollTop - $('timeline').clientHeight < 100;}
 function safeLink(value){try{const u=new URL(value,location.origin);return ['http:','https:'].includes(u.protocol)?u.href:null;}catch{return null;}}
 function node(tag,cls,text){const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;}
+const renewalUrl='https://selfservice.ksp.or.th/';
+const isRenewalMessage=message=>message.kind==='school'&&message.source==='system'&&message.title==='ต่ออายุใบประกอบวิชาชีพ';
 function appendMessageBody(bubble,message){
-  const body=String(message.body||'');
+  let body=String(message.body||'');
+  if(isRenewalMessage(message)){
+    body=body.replace(/ต่ออายุ:\s*https:\/\/selfservice\.ksp\.or\.th\//g,'').replace(/https:\/\/selfservice\.ksp\.or\.th\/(?=$|\s)/g,'').trim();
+    bubble.append(document.createTextNode(body));return new Set();
+  }
   // Only the official renewal URL in school system messages becomes a link.
   // Keep user text and all other URLs as text, and never parse message HTML.
   const matches=message.kind==='school'&&message.source==='system'
@@ -55,6 +61,10 @@ function appendMessageBody(bubble,message){
   return linked;
 }
 function appendMessageActions(bubble,message,linked){
+  if(isRenewalMessage(message)){
+    const link=node('a','detail-link','ต่ออายุใบประกอบวิชาชีพ ↗');
+    link.href=renewalUrl;link.target='_blank';link.rel='noopener noreferrer';bubble.append(link);return;
+  }
   let actions=[];try{const parsed=JSON.parse(message.actions||'[]');if(Array.isArray(parsed))actions=parsed;}catch{}
   for(const action of [...actions,...(message.url?[{title:'ดูรายละเอียด ↗',url:message.url}]:[])]){
     if(!action?.url)continue;
@@ -76,7 +86,7 @@ function render(scroll=false){
     const bubble=node('div','bubble');
     if(m.title&&!(m.source==='admin-reply'||m.source?.startsWith('reply:')))bubble.append(node('strong','',m.title));
     const linked=appendMessageBody(bubble,m);
-    if(admin)appendMessageActions(bubble,m,linked);
+    if(admin||isRenewalMessage(m))appendMessageActions(bubble,m,linked);
     content.append(bubble,node('time','',m.pending?'กำลังส่ง…':fmtTime(m.created_at)+(outgoing?(admin?' · ส่งแล้ว':' · ส่งแล้ว ✓'):'')));row.append(content);fragment.append(row);previous=m;
   }
   $('messages').replaceChildren(fragment);$('welcome').classList.toggle('hidden',messages.length>0||Boolean(optimistic));$('older').classList.toggle('hidden',!more);
