@@ -43,4 +43,16 @@ frame.signal(true,'https://system.banpadengschool.ac.th',frame.w);await new Prom
 frame.signal(true);await until(()=>frame.reads>0);assert(frame.posted.some(p=>p.data.type==='school-chat-read'));
 draft(frame,'เก็บข้อความร่างเมื่อย่อแชท');frame.$('timeline').scrollTop=123;frame.signal(false);const beforeRequests=frame.requests;await frame.timers.find(t=>t.ms===15000).fn();assert.equal(frame.requests,beforeRequests,'hidden chat must stop polling');assert.equal(frame.$('draft').value,'เก็บข้อความร่างเมื่อย่อแชท');
 frame.signal(true);await new Promise(r=>setImmediate(r));assert.equal(frame.$('draft').value,'เก็บข้อความร่างเมื่อย่อแชท');assert.equal(frame.$('timeline').scrollTop,123);assert(frame.w.location.search.includes('embedded=1'));await until(()=>!frame.w.__chatTesting().loading);
+// Renewal links are tappable only for official school system messages; HTML stays text.
+const renewal='https://selfservice.ksp.or.th/';
+const bodyNode=user.w.document.createElement('div');
+user.w.eval('appendMessageBody')(bodyNode,{kind:'school',source:'system',body:'ต่ออายุ: '+renewal+'\n<img src=x onerror=alert(1)>'});
+assert.equal(bodyNode.querySelectorAll('a').length,1);assert.equal(bodyNode.querySelector('a').href,renewal);
+assert.equal(bodyNode.querySelector('a').target,'_blank');assert.equal(bodyNode.querySelector('a').rel,'noopener noreferrer');
+assert.equal(bodyNode.querySelectorAll('img').length,0);assert.match(bodyNode.textContent,/<img src=x/);
+for(const message of [
+ {kind:'user',source:'system',body:renewal},
+ {kind:'school',source:'admin-reply',body:renewal},
+ {kind:'school',source:'system',body:'https://selfservice.ksp.or.th.evil.test/ https://selfservice.ksp.or.th/@evil https://evil.test/'},
+]){const n=user.w.document.createElement('div');user.w.eval('appendMessageBody')(n,message);assert.equal(n.querySelectorAll('a').length,0);assert.equal(n.textContent,message.body);}
 assert.equal(errors.length,0);for(const x of [user,a,signedout,frame]){x.dom.window.close();x.parent?.close();}console.log('✓ App UI: single room, no outgoing links, personal settings, appearance persistence, viewport resize, instant send, draft recovery, retry identity, embedded visibility/draft/scroll retention and admin compatibility');
