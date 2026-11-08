@@ -160,3 +160,8 @@ PC ใช้เมนูด้านข้างและจัดพื้น�
 ### Shared room UI and deployment updates (Patch 1.2.4)
 
 `public/index.html`, `chat.css` and `chat.js` are the single user-room implementation, including the signed embedded room in System. Admin-only styles do not apply to this room. Cloudflare `UI_VERSION` metadata is injected into the room HTML; the client compares `/api/ui-version` every 60 seconds and on resume. It reloads only when visible, idle, without a draft or open settings, and at the end of history. HTML is served without storage and CSS/JS require revalidation. System keeps its own bottom bar and iframe container. Deploy Notify to publish room updates to both entry points.
+
+
+### Shared conversation design and action buttons (Patch 1.2.5)
+
+Both `index.html` (including the System frame) and `inbox.html` load `room-ui.css` **after** their other stylesheets. Change this shared stylesheet for message cards, typography, work buttons, composer and touch feedback. The admin shell and role-specific tools remain in `admin-ui.css`. Both roles use `revealMessage` for new-message movement; sender direction remains relative to the viewer. School message actions and detail URLs render for recipients as well as admins, with safe URL validation/deduplication. Delivery-report links remain admin-only. The System iframe allows user-activated work links to open a new tab without navigating the dashboard.

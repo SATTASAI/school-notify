@@ -1,0 +1,47 @@
+/* Shared conversation UI. Load after chat.css and admin-ui.css in both rooms. */
+:is(body.user-chat,body.admin-chat){--room-font:-apple-system,BlinkMacSystemFont,"Sarabun",system-ui,sans-serif;--room-accent:#345ed2;--room-canvas:#f5f7fb;--room-surface:#fff;--room-ink:#24344b;--room-muted:#7d8ca3;--room-line:#e4eaf4;--message-font-size:15px;font-family:var(--room-font);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;--accent:var(--room-accent)}
+body.user-chat[data-theme=dark]{--room-canvas:#101a28;--room-surface:#162132;--room-ink:#e2e9f3;--room-muted:#a4b2c6;--room-line:#263548}
+body.user-chat[data-text-size=large]{--message-font-size:18px}
+:is(body.user-chat,body.admin-chat) .thread{background:var(--room-canvas)}
+:is(body.user-chat,body.admin-chat) .thread-header{background:var(--room-surface);border-bottom:1px solid var(--room-line);gap:12px;min-height:76px}
+:is(body.user-chat,body.admin-chat) .header-copy{min-width:0}
+:is(body.user-chat,body.admin-chat) .header-copy :is(h1,h2){font-size:17px;font-weight:600;line-height:1.5;letter-spacing:-.2px;color:var(--room-ink)}
+:is(body.user-chat,body.admin-chat) .header-copy p{font-size:12px;line-height:1.5;color:var(--room-muted)}
+:is(body.user-chat,body.admin-chat) .timeline{padding-top:20px;padding-bottom:20px;scrollbar-width:thin;scrollbar-color:var(--room-line) transparent}
+:is(body.user-chat,body.admin-chat) .message{gap:9px;margin-bottom:20px;animation:none}
+:is(body.user-chat,body.admin-chat) .message-content{max-width:min(88%,760px);min-width:0}
+:is(body.user-chat,body.admin-chat) .sender{font-size:11px;color:var(--room-muted);margin:0 0 6px 3px}
+:is(body.user-chat,body.admin-chat) .bubble{font-size:var(--message-font-size);line-height:1.7;padding:13px 16px;border:1px solid var(--room-line);border-radius:18px;background:var(--room-surface);color:var(--room-ink);box-shadow:none}
+:is(body.user-chat,body.admin-chat) .bubble strong{font-size:inherit;font-weight:600;line-height:1.6;margin-bottom:8px}
+:is(body.user-chat,body.admin-chat) .outgoing .bubble{background:var(--room-accent);border-color:var(--room-accent);color:#fff;border-radius:18px}
+:is(body.user-chat,body.admin-chat) .message time{font-size:11px;line-height:1.5;color:var(--room-muted);margin:6px 4px 0;font-variant-numeric:tabular-nums}
+:is(body.user-chat,body.admin-chat) .mini-avatar{width:26px;height:26px;background:var(--room-surface);border:1px solid var(--room-line);color:var(--room-muted);font-size:8px;border-radius:9px;margin-bottom:23px}
+:is(body.user-chat,body.admin-chat) .message .bubble .detail-link{display:flex;align-items:center;min-height:44px;background:#fff;color:#244da9;border:1px solid #dce5f4;border-radius:11px;padding:10px 13px;margin-top:10px;font-size:13px;line-height:1.6;font-weight:600;text-decoration:none;white-space:normal;overflow-wrap:anywhere}
+:is(body.user-chat,body.admin-chat) .outgoing .bubble .detail-link{background:#fff;color:#244da9;border-color:#fff}
+body.user-chat[data-theme=dark] .message:not(.outgoing) .bubble .detail-link{background:#213047;color:#b6d2ff;border-color:#354965}
+:is(body.user-chat,body.admin-chat) .composer{background:var(--room-surface);border-top:1px solid var(--room-line)}
+:is(body.user-chat,body.admin-chat) .compose-box{background:var(--room-canvas);border:1px solid var(--room-line);border-radius:24px;padding:8px 9px 8px 16px;gap:10px;transition:border-color 160ms ease,box-shadow 160ms ease}
+:is(body.user-chat,body.admin-chat) .compose-box:focus-within{border-color:color-mix(in srgb,var(--room-accent) 45%,var(--room-line));box-shadow:0 0 0 3px color-mix(in srgb,var(--room-accent) 8%,transparent)}
+:is(body.user-chat,body.admin-chat) .compose-box textarea{font-size:16px;line-height:1.65;min-height:38px;color:var(--room-ink);font-family:var(--room-font)}
+:is(body.user-chat,body.admin-chat) .send{width:40px;height:40px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--room-accent)}
+:is(body.user-chat,body.admin-chat) .send svg{width:22px;height:22px}
+:is(body.user-chat,body.admin-chat) :is(.compose-caption,.composer>p){display:flex;justify-content:space-between;font-size:10px;line-height:1.5;color:var(--room-muted);margin:7px 4px 0}
+:is(body.user-chat,body.admin-chat) .thread-header :is(.icon-button:not(.mobile-back),.thread-tools button){background:var(--room-canvas);border:1px solid var(--room-line)}
+:is(body.user-chat,body.admin-chat) .icon-button{width:44px;height:44px;border-radius:14px;color:var(--room-muted)}
+:is(body.user-chat,body.admin-chat) :is(button,select,.detail-link){touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:background-color 160ms ease,transform 180ms cubic-bezier(.22,.8,.25,1);font-family:var(--room-font)}
+:is(body.user-chat,body.admin-chat) :is(button,.detail-link):active:not(:disabled){transform:scale(.975)}
+@media(max-width:700px){
+ :is(body.user-chat,body.admin-chat) .thread-header{padding:12px 14px;padding-top:max(12px,env(safe-area-inset-top))}
+ :is(body.user-chat,body.admin-chat) .timeline{padding:18px 12px}
+ :is(body.user-chat,body.admin-chat) .composer{padding:10px 12px max(9px,env(safe-area-inset-bottom))}
+ body.user-chat.embedded-chat .thread-header{padding-top:12px}
+ body.user-chat.embedded-chat .composer{padding-bottom:8px}
+}
+@media(prefers-reduced-motion:no-preference){
+ .user-chat .personal-settings[open]{animation:room-settings-in 180ms cubic-bezier(.22,.8,.25,1)}
+ @keyframes room-settings-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+}
+@media(prefers-reduced-motion:reduce){
+ :is(body.user-chat,body.admin-chat) :is(button,select,.detail-link,.compose-box){transition:none}
+ :is(body.user-chat,body.admin-chat) :is(button,.detail-link):active:not(:disabled){transform:none}
+}

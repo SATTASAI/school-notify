@@ -73,24 +73,29 @@ function appendMessageActions(bubble,message,linked){
     link.href=href;link.target='_blank';link.rel='noopener noreferrer';bubble.append(link);linked.add(href);
   }
 }
+function revealMessage(row){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches || typeof row.animate!=='function')return;
+  const direction=row.classList.contains('outgoing')?1:-1;
+  row.animate([{opacity:.35,transform:`translate3d(${direction*10}px,6px,0)`},{opacity:1,transform:'translate3d(0,0,0)'}],{duration:180,easing:'cubic-bezier(.22,.8,.25,1)'});
+}
 function render(scroll=false){
   const fragment=document.createDocumentFragment(),existingIds=new Set([...$('messages').children].map(el=>el.id)),newRows=[];let day='', previous=null;
   for(const m of [...messages,...(optimistic?[optimistic]:[])]){
     const date=dateLabel(m.created_at); if(date!==day){fragment.append(node('div','day',date));day=date;}
     const outgoing=admin?m.kind==='school':m.kind==='user';
     const grouped=!admin && previous && previous.kind===m.kind && m.created_at-previous.created_at<300000 && dateLabel(previous.created_at)===date;
-    const row=node('article','message'+(outgoing?' outgoing':'')+(grouped?' grouped':'')+(m.pending?' pending':''));row.id='message-'+m.kind+'-'+m.id;if(admin&&existingIds.size&&!existingIds.has(row.id))newRows.push(row);
+    const row=node('article','message'+(outgoing?' outgoing':'')+(grouped?' grouped':'')+(m.pending?' pending':''));row.id='message-'+m.kind+'-'+m.id;if(scroll&&existingIds.size&&!existingIds.has(row.id)&&!(m.kind==='user'&&existingIds.has('message-user-pending')))newRows.push(row);
     if(!outgoing)row.append(node('span','mini-avatar',admin?'ผู้ใช้':'บปด'));
     const content=node('div','message-content');
     if(!outgoing)content.append(node('div','sender',admin?(rooms.find(r=>r.ref===ref)?.label||'ผู้ใช้'):(m.source==='admin-reply'||m.source?.startsWith('reply:'))?'แอดมินโรงเรียน':'โรงเรียนบ้านป่าเด็ง'));
     const bubble=node('div','bubble');
     if(m.title&&!(m.source==='admin-reply'||m.source?.startsWith('reply:')))bubble.append(node('strong','',m.title));
     const linked=appendMessageBody(bubble,m);
-    if(admin||isRenewalMessage(m))appendMessageActions(bubble,m,linked);
+    if(m.kind==='school')appendMessageActions(bubble,m,linked);
     if(admin&&m.kind==='school'&&!isRenewalMessage(m)){const report=node('a','detail-link','ตรวจผลการส่งรายเครื่อง ↗');report.href='/admin?notification='+encodeURIComponent(m.id);report.target='_blank';report.rel='noopener noreferrer';bubble.append(report);}
     content.append(bubble,node('time','',m.pending?'กำลังส่ง…':fmtTime(m.created_at)+(outgoing?(admin?' · ส่งแล้ว':' · ส่งแล้ว ✓'):'')));row.append(content);fragment.append(row);previous=m;
   }
-  $('messages').replaceChildren(fragment);if(admin){filterMessages();for(const row of newRows)window.NotifyAdminUI?.reveal(row,1);}$('welcome').classList.toggle('hidden',messages.length>0||Boolean(optimistic));$('older').classList.toggle('hidden',!more);
+  $('messages').replaceChildren(fragment);if(admin)filterMessages();for(const row of newRows)revealMessage(row);$('welcome').classList.toggle('hidden',messages.length>0||Boolean(optimistic));$('older').classList.toggle('hidden',!more);
   if(!admin && $('preview')){const last=messages.at(-1);$('preview').textContent=last?(last.kind==='user'?'คุณ: ':'')+(last.body||last.title):'ประกาศและข้อความจากโรงเรียน';}
   if(scroll){$('timeline').scrollTop=$('timeline').scrollHeight;$('newMessages').classList.add('hidden');}
   if(messageId&&!focused){const target=$('message-school-'+messageId);if(target){target.scrollIntoView({block:'center'});target.classList.add('highlight');focused=true;}}
@@ -121,7 +126,7 @@ async function load(older=false){
     }
     const stick=nearBottom(), oldHeight=$('timeline').scrollHeight, oldTop=$('timeline').scrollTop;
     let changed=false;
-    for(const m of data.messages){const key=m.kind+'-'+m.id;const old=cache.get(key);if(!old||old.created_at!==m.created_at||old.body!==m.body){changed=true;}cache.set(key,m);}
+    for(const m of data.messages){const key=m.kind+'-'+m.id;const old=cache.get(key);if(!old||['created_at','body','title','url','actions','source'].some(key=>old[key]!==m[key])){changed=true;}cache.set(key,m);}
     messages=[...cache.values()].sort((a,b)=>a.created_at-b.created_at||a.kind.localeCompare(b.kind)||a.id-b.id);
     if(older||!before){before=data.before;more=data.more;}
     if(changed||!messages.length){render(!older&&stick);if(older)$('timeline').scrollTop=oldTop+$('timeline').scrollHeight-oldHeight;else if(!stick){$('timeline').scrollTop=oldTop;$('newMessages').classList.remove('hidden');}}
