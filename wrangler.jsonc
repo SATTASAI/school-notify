@@ -4,12 +4,13 @@
   "main": "src/index.js",
   "compatibility_date": "2026-05-15",
   "keep_vars": true,
+  "version_metadata": { "binding": "UI_VERSION" },
   "workers_dev": true,
   "preview_urls": false,
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*", "/internal/*", "/manifest.webmanifest"]
+    "run_worker_first": ["/", "/index.html", "/api/*", "/internal/*", "/manifest.webmanifest"]
   },
   "observability": { "enabled": true },
   // ส่งงานที่ตั้งเวลาไว้ + ต่องานค้าง ทุก 1 นาที

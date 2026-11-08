@@ -362,6 +362,7 @@ export default {
     const m = req.method;
 
     try {
+      if (p === '/api/ui-version' && m === 'GET') return new Response(JSON.stringify({version: env.UI_VERSION?.id || ''}), {headers: {'content-type':'application/json', 'cache-control':'no-store'}});
       if(p.startsWith('/api/passkeys'))return await handleNotifyPasskeys(req,env,safeEqual);
       const chat = await chatRoute(req, env, ctx, { verifyLinkToken, hmac, authorized: await isAuthorized(req, env), createNotification });
       if (chat) return chat;
@@ -397,7 +398,15 @@ export default {
       console.error(e);
       return json({ error: 'server error', detail: String(e?.message || e) }, 500);
     }
-    return env.ASSETS.fetch(req);
+    const asset = await env.ASSETS.fetch(req);
+    if ((p === '/' || p === '/index.html') && asset.ok && asset.headers.get('content-type')?.includes('text/html')) {
+      const response = new HTMLRewriter().on('head', {element(el) {
+        el.append('<meta name="notify-ui-version" content="' + String(env.UI_VERSION?.id || '').replace(/[^a-zA-Z0-9-]/g, '') + '">', {html:true});
+      }}).transform(asset);
+      response.headers.set('cache-control', 'no-store');
+      return response;
+    }
+    return asset;
   },
 
   async scheduled(_event, env, ctx) {

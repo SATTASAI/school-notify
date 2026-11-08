@@ -11,7 +11,7 @@ if(embedded){
     if(event.origin!==schoolOrigin || event.source!==window.parent || event.data?.type!=='school-chat-visibility')return;
     embeddedVisible=event.data.visible===true;
     if(!embeddedVisible){saveDraft();$('draft').blur();}
-    else if(active)load();
+    else if(active){load();refreshUI();}
   });
 }
 let token = admin ? sessionStorage.getItem('notifyToken') || '' : '';
@@ -242,3 +242,28 @@ function initPersonalSettings(){
   viewport?.addEventListener('resize',resize);window.addEventListener('resize',resize);resize();
   if(typeof ResizeObserver!=='undefined')new ResizeObserver(()=>{$('messenger').style.setProperty('--composer-height',$('composer').offsetHeight+'px');}).observe($('composer'));
 }
+
+
+// Both standalone Notify and the System frame load this same release.
+// Defer updates while composing, sending, reading history or viewing settings.
+const uiVersion = document.querySelector('meta[name="notify-ui-version"]')?.content;
+let checkingUI = false;
+async function refreshUI() {
+  if (!uiVersion || checkingUI || document.hidden || !embeddedVisible || !active || busy || loading || optimistic ||
+      $('draft').value || document.activeElement === $('draft') || $('personalSettings')?.open || !nearBottom()) return;
+  checkingUI = true;
+  try {
+    const response = await fetch('/api/ui-version', {cache:'no-store', signal:AbortSignal.timeout(10000)});
+    if (!response.ok) return;
+    const data = await response.json();
+    if (typeof data.version === 'string' && data.version && data.version !== uiVersion) {
+      saveDraft();
+      location.reload();
+    }
+  } catch { /* A failed release check must not interrupt the conversation. */ }
+  finally { checkingUI = false; }
+}
+setInterval(refreshUI, 60000);
+window.addEventListener('online', refreshUI);
+window.addEventListener('pageshow', refreshUI);
+document.addEventListener('visibilitychange', refreshUI);
