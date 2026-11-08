@@ -1,3 +1,5 @@
+import {queueWelcome} from './welcome.js';
+import {adminReports} from './admin-reports.js';
 import {handleNotifyPasskeys,passkeyAdminSession} from './passkeys.js';
 import { chatRoute } from './chat.js';
 import { generateVapidKeys, sendPush, b64uEncode, b64uDecode } from './webpush.js';
@@ -74,7 +76,7 @@ async function readJson(req) {
 }
 
 // ---------- subscriptions ----------
-async function subscribe(req, env) {
+async function subscribe(req, env, ctx) {
   const b = await readJson(req);
   const sub = b?.subscription;
   if (!sub?.endpoint || !sub?.keys?.p256dh || !sub?.keys?.auth || !/^https:\/\//.test(sub.endpoint)) {
@@ -97,6 +99,7 @@ async function subscribe(req, env) {
   // exclusive (ส่งมาจากระบบโรงเรียน): เครื่องนี้ผูกกับบัญชีล่าสุดที่กดเปิดเท่านั้น — กันเครื่องใช้ร่วมกันได้รับแจ้งเตือนของคนอื่น
   const exclusive = Boolean(link && b.exclusive);
   const existingRefs = existing ? fromSet(existing.refs) : [];
+  const newConnection=!existing||Boolean(link&&!existingRefs.includes(link.ref));
   const keptTrusted = exclusive ? [] : existingRefs.filter((r) => TRUSTED_REF.test(r));
   const mergedRefs = exclusive ? [...existingRefs.filter((r) => !TRUSTED_REF.test(r)), ...refs]
     : b.replace || !existing ? [...keptTrusted, ...refs] : [...existingRefs, ...refs];
@@ -105,10 +108,11 @@ async function subscribe(req, env) {
     `INSERT INTO subscriptions (endpoint, p256dh, auth, roles, refs, label, user_agent, created_at, updated_at)
      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8)
      ON CONFLICT(endpoint) DO UPDATE SET p256dh = ?2, auth = ?3, roles = ?4, refs = ?5,
-       label = COALESCE(?6, label), user_agent = ?7, updated_at = ?8, fail_count = 0`
-  ).bind(sub.endpoint, sub.keys.p256dh, sub.keys.auth, toSet(mergedRoles), toSet(mergedRefs), label, ua, t).run();
+       label = COALESCE(?6, label), user_agent = ?7, updated_at = ?8, fail_count = 0, created_at=CASE WHEN ?9 THEN ?8 ELSE created_at END`
+  ).bind(sub.endpoint, sub.keys.p256dh, sub.keys.auth, toSet(mergedRoles), toSet(mergedRefs), label, ua, t, newConnection?1:0).run();
 
-  const row = await env.DB.prepare('SELECT roles, refs, label FROM subscriptions WHERE endpoint = ?').bind(sub.endpoint).first();
+  const row = await env.DB.prepare('SELECT id, roles, refs, label FROM subscriptions WHERE endpoint = ?').bind(sub.endpoint).first();
+  if(newConnection){const welcome=await queueWelcome(env,row,link,t);if(welcome?.status==='sending')ctx.waitUntil(processBatch(env,welcome.id).catch(error=>console.error('welcome push',error)));}
   return json({ ok: true, roles: fromSet(row.roles), refs: fromSet(row.refs), label: row.label });
 }
 
@@ -180,10 +184,10 @@ async function startSend(env, id) {
     "UPDATE notifications SET status = 'sending', updated_at = ? WHERE id = ? AND status IN ('queued', 'scheduled')"
   ).bind(now(), id).run();
   if (claim.meta.changes !== 1) return;
-  const n = await env.DB.prepare('SELECT roles, refs FROM notifications WHERE id = ?').bind(id).first();
+  const n = await env.DB.prepare('SELECT roles, refs, send_at FROM notifications WHERE id = ?').bind(id).first();
 
-  const where = [];
-  const binds = [id];
+  const where = ['created_at<=?'];
+  const binds = [id,n.send_at];
   if (n.roles !== 'all') {
     const roles = n.roles.split(',');
     where.push(`(${roles.map(() => 'roles LIKE ?').join(' OR ')})`);
@@ -211,8 +215,8 @@ async function processBatch(env, id) {
   const { results } = await env.DB.prepare(
     `SELECT d.id AS did, s.id AS sid, s.endpoint, s.p256dh, s.auth
      FROM deliveries d JOIN subscriptions s ON s.id = d.subscription_id
-     WHERE d.notification_id = ? AND d.status = 'pending' LIMIT ?`
-  ).bind(id, BATCH).all();
+     WHERE d.notification_id = ? AND d.status = 'pending' AND s.created_at<=? LIMIT ?`
+  ).bind(id, n.send_at, BATCH).all();
 
   if (results.length) {
     const vapid = await getVapid(env);
@@ -236,6 +240,7 @@ async function processBatch(env, id) {
      AND subscription_id NOT IN (SELECT id FROM subscriptions)`
   ).bind(id).run();
 
+  await env.DB.prepare("UPDATE deliveries SET status='fail',http_status=410 WHERE notification_id=? AND status='pending' AND subscription_id IN (SELECT id FROM subscriptions WHERE created_at>?)").bind(id,n.send_at).run();
   const left = await env.DB.prepare("SELECT COUNT(*) AS c FROM deliveries WHERE notification_id = ? AND status = 'pending'").bind(id).first();
   if (left.c > 0) return continueLater(env, id);
   await finish(env, id);
@@ -312,10 +317,10 @@ function deviceOf(ua, endpoint) {
 // รายการเครื่องที่ผูกรหัสตาม prefix (ให้ระบบโรงเรียนแสดงหน้าตรวจสอบ) — ไม่ส่ง endpoint/คีย์ออกไป
 async function listSubscriptions(env, prefix) {
   const { results } = await env.DB.prepare(
-    'SELECT id, refs, endpoint, user_agent, created_at, last_ok_at, fail_count FROM subscriptions WHERE refs LIKE ? ORDER BY id'
+    'SELECT id, refs, roles, label, endpoint, user_agent, created_at, last_ok_at, fail_count FROM subscriptions WHERE refs LIKE ? ORDER BY id'
   ).bind(`%,${prefix}%`).all();
   return json({ subscriptions: results.map((r) => ({
-    id: r.id, refs: fromSet(r.refs).filter((x) => x.startsWith(prefix)), device: deviceOf(r.user_agent, r.endpoint),
+    id: r.id, label:r.label, roles:fromSet(r.roles), refs: fromSet(r.refs).filter((x) => x.startsWith(prefix)), device: deviceOf(r.user_agent, r.endpoint),
     created_at: r.created_at, last_ok_at: r.last_ok_at, fail_count: r.fail_count,
   })) });
 }
@@ -363,7 +368,7 @@ export default {
       if (p === '/manifest.webmanifest') return manifest(url);
       if (p === '/api/config' && m === 'GET') return json({ openSubscribe: env.OPEN_SUBSCRIBE === 'true' });
       if (p === '/api/vapid-public-key' && m === 'GET') return json({ publicKey: (await getVapid(env)).publicKey });
-      if (p === '/api/subscribe' && m === 'POST') return await subscribe(req, env);
+      if (p === '/api/subscribe' && m === 'POST') return await subscribe(req, env, ctx);
       if (p === '/api/subscription' && m === 'POST') return await subscriptionInfo(req, env);
       if (p === '/api/unsubscribe' && m === 'POST') return await unsubscribe(req, env);
       if (p === '/api/test' && m === 'POST') return await testPush(req, env);
@@ -377,6 +382,7 @@ export default {
 
       if (p.startsWith('/api/')) {
         if (!await isAuthorized(req, env)) return json({ error: 'unauthorized' }, 401);
+        if(p.startsWith('/api/admin/'))return await adminReports(req,env,deviceOf);
         if ((p === '/api/notifications' || p === '/api/send') && m === 'POST') return await createNotification(req, env, ctx);
         if (p === '/api/notifications' && m === 'GET') return await listNotifications(env);
         const cm = p.match(/^\/api\/notifications\/(\d+)\/cancel$/);

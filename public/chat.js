@@ -18,7 +18,7 @@ let token = admin ? sessionStorage.getItem('notifyToken') || '' : '';
 let ref = '', rooms = [], messages = [], before = null, more = false, busy = false, active = false, pendingId = null, loading = false;
 const cache = new Map(), readThrough = new Map();
 const messageId = qs.get('message');
-let focused = false, optimistic = null;
+let focused = false, optimistic = null, unreadOnly=false;
 const max = admin ? 1000 : 2000;
 const fmtTime = t => new Date(t).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
 const fmtDate = t => new Date(t).toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'});
@@ -82,14 +82,15 @@ function render(scroll=false){
     const row=node('article','message'+(outgoing?' outgoing':'')+(grouped?' grouped':'')+(m.pending?' pending':''));row.id='message-'+m.kind+'-'+m.id;
     if(!outgoing)row.append(node('span','mini-avatar',admin?'ผู้ใช้':'บปด'));
     const content=node('div','message-content');
-    if(!outgoing)content.append(node('div','sender',admin?($('accountName')?.textContent||'ผู้ใช้'):(m.source==='admin-reply'||m.source?.startsWith('reply:'))?'แอดมินโรงเรียน':'โรงเรียนบ้านป่าเด็ง'));
+    if(!outgoing)content.append(node('div','sender',admin?(rooms.find(r=>r.ref===ref)?.label||'ผู้ใช้'):(m.source==='admin-reply'||m.source?.startsWith('reply:'))?'แอดมินโรงเรียน':'โรงเรียนบ้านป่าเด็ง'));
     const bubble=node('div','bubble');
     if(m.title&&!(m.source==='admin-reply'||m.source?.startsWith('reply:')))bubble.append(node('strong','',m.title));
     const linked=appendMessageBody(bubble,m);
     if(admin||isRenewalMessage(m))appendMessageActions(bubble,m,linked);
+    if(admin&&m.kind==='school'&&!isRenewalMessage(m)){const report=node('a','detail-link','ตรวจผลการส่งรายเครื่อง ↗');report.href='/admin?notification='+encodeURIComponent(m.id);report.target='_blank';report.rel='noopener noreferrer';bubble.append(report);}
     content.append(bubble,node('time','',m.pending?'กำลังส่ง…':fmtTime(m.created_at)+(outgoing?(admin?' · ส่งแล้ว':' · ส่งแล้ว ✓'):'')));row.append(content);fragment.append(row);previous=m;
   }
-  $('messages').replaceChildren(fragment);$('welcome').classList.toggle('hidden',messages.length>0||Boolean(optimistic));$('older').classList.toggle('hidden',!more);
+  $('messages').replaceChildren(fragment);if(admin)filterMessages();$('welcome').classList.toggle('hidden',messages.length>0||Boolean(optimistic));$('older').classList.toggle('hidden',!more);
   if(!admin && $('preview')){const last=messages.at(-1);$('preview').textContent=last?(last.kind==='user'?'คุณ: ':'')+(last.body||last.title):'ประกาศและข้อความจากโรงเรียน';}
   if(scroll){$('timeline').scrollTop=$('timeline').scrollHeight;$('newMessages').classList.add('hidden');}
   if(messageId&&!focused){const target=$('message-school-'+messageId);if(target){target.scrollIntoView({block:'center'});target.classList.add('highlight');focused=true;}}
@@ -130,25 +131,44 @@ async function load(older=false){
   }catch(e){state(e.message+' · จะลองเชื่อมต่ออีกครั้ง',true);if(e.status===401)gate();}finally{loading=false;if(!admin&&active&&!$('connection').classList.contains('error'))$('connection').classList.add('quiet');if(admin&&selected!==ref)load();}
 }
 function renderRooms(){
-  const list=$('roomList');list.replaceChildren();const search=$('search').value.toLowerCase();
-  for(const room of rooms.filter(r=>(r.label+' '+r.ref).toLowerCase().includes(search))){const row=node('button','conversation'+(ref===room.ref?' active':''));row.append(node('span','avatar',room.label.slice(0,2)));const text=node('span','conversation-copy');text.append(node('span','conversation-title',room.label),node('span','preview',room.preview||'ยังไม่มีข้อความตอบกลับ'));row.append(text);if(room.unread)row.append(node('span','unread',String(room.unread)));row.onclick=()=>selectRoom(room);list.append(row);}
-  if(!list.children.length)list.append(node('p','section-label',search?'ไม่พบผู้ใช้':'ยังไม่มีผู้ใช้เปิดห้องข้อความ'));
+  const list=$('roomList');list.replaceChildren();const search=$('search').value.toLowerCase(),role=$('roomRole')?.value;
+  const visible=rooms.filter(r=>(r.label+' '+r.ref+' '+(r.preview||'')).toLowerCase().includes(search)&&(!unreadOnly||r.unread>0)&&(!role||r.role===role));
+  if($('roomSummary'))$('roomSummary').textContent=visible.length+' จาก '+rooms.length+' ห้อง · ยังไม่อ่าน '+rooms.filter(r=>r.unread>0).length+' ห้อง';
+  for(const room of visible){
+    const row=node('button','conversation'+(ref===room.ref?' active':''));row.append(node('span','avatar',room.label.slice(0,2)));
+    const text=node('span','conversation-copy');text.append(node('span','conversation-title',room.label),node('span','preview',room.preview||'ยังไม่มีข้อความตอบกลับ'),node('span','room-meta',({teacher:'ครู',parent:'ผู้ปกครอง',student:'นักเรียน'})[room.role]+' · '+(room.last_message_at?fmtDate(room.last_message_at)+' '+fmtTime(room.last_message_at):'ยังไม่มีข้อความ')));
+    row.append(text);if(room.unread)row.append(node('span','unread',String(room.unread)));row.onclick=()=>selectRoom(room);list.append(row);
+  }
+  if(!list.children.length)list.append(node('p','section-label',search||unreadOnly||role?'ไม่พบห้องตามตัวกรอง':'ยังไม่มีผู้ใช้เปิดห้องข้อความ'));
 }
-async function loadRooms(){const data=await api('conversations');rooms=data.conversations;renderRooms();}
+function filterMessages(){
+ const query=$('messageSearch')?.value.trim().toLowerCase()||'';let shown=0;
+ document.querySelectorAll('#messages .message').forEach(el=>{const match=el.textContent.toLowerCase().includes(query);el.classList.toggle('no-match',!match);if(match)shown++;});
+ if($('messageMatches'))$('messageMatches').textContent=query?'พบ '+shown+' ข้อความในประวัติที่โหลดแล้ว · กดดูข้อความก่อนหน้าเพื่อค้นหาเพิ่มเติม':'';
+}
+function roomDetails(room){
+ if(!$('roomDetails'))return;
+ const dl=node('dl');for(const [label,value] of [['ชื่อผู้ใช้',room.label],['รหัสบัญชี',room.ref],['บทบาท',({teacher:'ครู',parent:'ผู้ปกครอง',student:'นักเรียน'})[room.role]||room.role],['เริ่มใช้ห้อง',fmtDate(room.created_at)],['จุดอ่านของผู้ใช้',room.user_read_at?fmtDate(room.user_read_at)+' '+fmtTime(room.user_read_at):'ยังไม่มีบันทึก'],['จุดอ่านของแอดมิน',room.admin_read_at?fmtDate(room.admin_read_at)+' '+fmtTime(room.admin_read_at):'ยังไม่มีบันทึก']]){dl.append(node('dt','',label),node('dd','',value));}
+ $('roomDetails').replaceChildren(dl);
+}
+async function loadRooms(){const data=await api('conversations');rooms=data.conversations;renderRooms();if(ref){const selected=rooms.find(r=>r.ref===ref);if(selected)roomDetails(selected);}}
 async function selectRoom(room){
   // Preserve each unsent draft while switching rooms.
   if(ref)sessionStorage.setItem('notifyDraft:'+ref,$('draft').value);
   ref=room.ref;cache.clear();messages=[];before=null;more=false;pendingId=null;
   document.querySelector('.header-copy h2').textContent=room.label;
+  const headerNote=document.querySelector('.header-copy p');if(headerNote)headerNote.textContent=room.ref+' · ห้องข้อความส่วนตัว';
+  roomDetails(room);if($('showRoomDetails'))$('showRoomDetails').disabled=false;if($('findMessages'))$('findMessages').disabled=false;
+  if($('messageSearch'))$('messageSearch').value='';
   $('draft').value=sessionStorage.getItem('notifyDraft:'+ref)||'';updateDraft();
   $('messenger').classList.add('room-open');$('welcome').classList.remove('hidden');$('messages').replaceChildren();
   await load();await loadRooms();
 }
-function updateDraft(){const d=$('draft');d.style.height='auto';d.style.height=Math.min(140,d.scrollHeight)+'px';$('count').textContent=d.value.length+'/'+max;$('count').classList.toggle('near-limit',d.value.length>=max-200);$('send').disabled=!active||busy||!d.value.trim();}
+function updateDraft(){const d=$('draft');d.style.height='auto';d.style.height=Math.min(140,d.scrollHeight)+'px';$('count').textContent=d.value.length+'/'+max;$('count').classList.toggle('near-limit',d.value.length>=max-200);$('send').disabled=!active||busy||(admin&&!ref)||!d.value.trim();}
 $('draft').addEventListener('input',()=>{pendingId=null;saveDraft();updateDraft();});
 $('draft').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&!matchMedia('(pointer:coarse)').matches){e.preventDefault();$('composer').requestSubmit();}});
 $('composer').onsubmit=async e=>{
-  e.preventDefault();const body=$('draft').value.trim();if(!body||busy||!active)return;busy=true;updateDraft();const selected=ref;
+  e.preventDefault();const body=$('draft').value.trim();if(!body||busy||!active||(admin&&!ref))return;busy=true;updateDraft();const selected=ref;
   pendingId ||= crypto.randomUUID();
   $('draft').readOnly=true;
   if(!admin){optimistic={id:'pending',kind:'user',body,created_at:Date.now(),pending:true};render(true);}
@@ -167,8 +187,17 @@ if($('back'))$('back').onclick=()=>{$('messenger').classList.remove('room-open')
 $('openRoom')?.addEventListener('click',()=>{$('messenger').classList.add('room-open');markRead().catch(()=>{});});
 $('logout').onclick=async()=>{if(admin){const t=sessionStorage.getItem('notifyToken')||'';if(t.startsWith('pk_'))await fetch('/api/passkeys/logout',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+t},body:'{}'}).catch(()=>{});sessionStorage.removeItem('notifyToken');location.href='/admin';}else{await fetch('/api/chat/logout',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});location.href='/';}};
 $('search')?.addEventListener('input',renderRooms);
+if(admin){
+ $('allRooms')?.addEventListener('click',()=>{unreadOnly=false;$('allRooms').classList.add('active');$('unreadRooms').classList.remove('active');renderRooms();});
+ $('unreadRooms')?.addEventListener('click',()=>{unreadOnly=true;$('allRooms').classList.remove('active');$('unreadRooms').classList.add('active');renderRooms();});
+ $('roomRole')?.addEventListener('change',renderRooms);
+ $('messageSearch')?.addEventListener('input',filterMessages);
+ $('showRoomDetails')?.addEventListener('click',()=>{$('roomDetails').classList.toggle('hidden');});
+ $('findMessages')?.addEventListener('click',()=>{$('messageFilter').classList.toggle('hidden');if(!$('messageFilter').classList.contains('hidden'))$('messageSearch').focus();else{$('messageSearch').value='';filterMessages();}});
+}
+
 async function init(){
-  if(admin){if(!token){gate();return;}await loadRooms();active=true;state('เลือกผู้ใช้เพื่ออ่านและตอบข้อความ');}
+  if(admin){if(!token){gate();return;}await loadRooms();active=true;state('เลือกผู้ใช้เพื่ออ่านและตอบข้อความ');if(qs.get('ref')){const selected=rooms.find(r=>r.ref===qs.get('ref'));if(selected)await selectRoom(selected);else state('ผู้ใช้นี้ยังไม่ได้เปิดห้องข้อความ',true);}}
   else{
     if(!qs.has('t')&&['role','ref','label'].some(k=>qs.has(k))){location.replace('/setup?'+qs);return;}
     const link=qs.get('t');if(link){$('manifestLink').href='/manifest.webmanifest?t='+encodeURIComponent(link);await api('session',{method:'POST',body:JSON.stringify({token:link})});const clean=new URL(location.href);clean.searchParams.delete('t');history.replaceState(null,'',clean.pathname+clean.search);}
