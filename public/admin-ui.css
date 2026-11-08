@@ -98,3 +98,125 @@ body.admin-chat{background:#f1f5fa}.admin-chat .messenger{max-width:none;margin:
  .admin-chat .login-gate{padding:16px}
  body.admin-chat:not(.admin-authenticated) .messenger{height:var(--admin-vh,100dvh)}
 }
+
+/* Native-style type, feedback and motion (Patch 1.2.3). */
+:root{--admin-ease:cubic-bezier(.22,.8,.25,1);--admin-font:-apple-system,BlinkMacSystemFont,"Sarabun",system-ui,sans-serif}
+body.admin-console,body.admin-chat{font-family:var(--admin-font);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;letter-spacing:0}
+.admin-console button,.admin-console input,.admin-console textarea,.admin-console select,.admin-chat button,.admin-chat input,.admin-chat textarea{font-family:var(--admin-font)}
+.admin-icon{display:inline-block;width:20px;height:20px;flex:none;vertical-align:middle;pointer-events:none}
+.admin-console button:has(.admin-icon),.admin-chat button:has(.admin-icon){display:inline-flex;justify-content:center;align-items:center;gap:8px}
+.console-nav nav .admin-icon{width:20px;height:20px}
+.admin-console .console-nav nav button,.admin-console .console-nav nav a{font-size:14px;padding:13px 12px;border-radius:12px}
+.admin-console .console-header h1{font-size:28px;font-weight:700;letter-spacing:-.65px}
+.admin-console .panel h2{font-size:18px;letter-spacing:-.2px}
+.admin-console .muted{font-size:13px;line-height:1.65}
+.admin-console .metrics strong{font-variant-numeric:tabular-nums;letter-spacing:-1px}
+.admin-console button,.admin-chat button,.admin-bottom-bar a,.admin-chat .conversation{touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:background-color 160ms ease,color 160ms ease,border-color 160ms ease,box-shadow 180ms ease,transform 160ms var(--admin-ease)}
+.admin-console button:active:not(:disabled),.admin-chat button:active:not(:disabled){transform:scale(.975)}
+.admin-console .panel,.admin-console .metrics article,.admin-console .device-card{box-shadow:0 2px 9px #193c6604}
+.admin-console .history-row h3{font-size:15px;line-height:1.55}
+.admin-console .history-row p{font-size:13px;line-height:1.6}
+.admin-console .history-row small{font-size:11px;line-height:1.6}
+.admin-console .badge{font-size:11px;padding:4px 9px}
+.admin-console .detail-grid,.admin-console .delivery-row{font-size:13px;line-height:1.65}
+.admin-console .device-card h3{font-size:15px}
+.admin-console .device-card p{font-size:13px}
+.admin-console [aria-busy=true]{cursor:progress}
+.admin-console [aria-busy=true]::after{content:"";display:block;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,#83aaf0,transparent);animation:admin-loading 1s ease-in-out infinite;transform-origin:left}
+@keyframes admin-loading{0%,100%{opacity:.25;transform:scaleX(.4)}50%{opacity:1;transform:scaleX(1)}}
+.admin-console .admin-dialog{box-shadow:0 24px 100px #13294730}
+.admin-chat .message{animation:none}
+.admin-chat .inbox-heading h1{letter-spacing:-.5px}
+.admin-chat .conversation-title{font-size:14px;font-weight:600;line-height:1.5}
+.admin-chat .preview{font-size:12px;line-height:1.5}
+.admin-chat .room-meta{font-size:11px}
+.admin-chat .thread-header h2{font-size:17px;font-weight:600;line-height:1.5}
+.admin-chat .thread-header p{font-size:12px}
+.admin-chat .message time{font-size:11px;margin-top:6px}
+.admin-chat .sender{font-size:12px}
+.admin-chat .bubble{line-height:1.7;font-size:15px}
+.admin-chat .compose-box{border-radius:21px;padding:8px 9px 8px 16px}
+.admin-chat .send .admin-icon{width:22px;height:22px}
+.admin-chat .thread-tools .admin-icon{width:17px;height:17px}
+.admin-chat .icon-button .admin-icon{width:22px;height:22px}
+.admin-chat .connection{font-size:12px;line-height:1.5}
+.admin-chat .room-controls button{font-size:12px;border-radius:11px}
+.admin-chat .room-details{font-size:13px}
+.admin-chat .room-summary{font-size:12px;line-height:1.5}
+.admin-bottom-bar .admin-icon{width:22px;height:22px}
+.nav-active-indicator{display:none}
+@media(hover:hover){.admin-console .secondary:hover,.admin-chat .thread-tools button:hover{box-shadow:0 3px 12px #284b7d0b}.admin-chat .conversation:hover{transform:translateX(2px)}}
+@media(hover:none){.admin-console button:hover{filter:none}}
+@media(max-width:700px){
+ body.admin-console.admin-authenticated{height:var(--admin-vh,100dvh);overflow:hidden}
+ .admin-console.admin-authenticated .console-shell{height:var(--admin-vh,100dvh);min-height:0;display:flex;flex-direction:column;padding-bottom:var(--admin-nav-height);overflow:hidden}
+ .admin-console .console-nav{flex:none;position:relative;min-height:62px;background:#f8faff;color:#203b61;border-bottom:1px solid #e7ecf3}
+ .admin-console .console-brand{color:#233e62;font-size:16px}
+ .admin-console .console-brand img{width:32px;height:32px;border-radius:10px}
+ .admin-console .nav-bottom a{color:#50729c;font-size:11px}
+ .admin-console .nav-bottom button{color:#617996;background:#edf2fa;border-color:#e1e8f3;font-size:11px}
+ .admin-console .nav-bottom button .admin-icon{width:16px;height:16px}
+ .admin-console.admin-authenticated .console-main{flex:1;min-height:0;overflow:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:20px 16px 28px}
+ .admin-console .console-header h1{font-size:26px;letter-spacing:-.6px}
+ .admin-console .console-header .muted{font-size:13px}
+ .admin-console .console-header .actions{gap:9px;margin-top:17px}
+ .admin-console .console-header .actions button{border-radius:13px;font-size:14px;min-height:44px;padding:10px 14px}
+ .admin-console .panel{padding:19px 16px;border-radius:19px}
+ .admin-console .metrics{gap:11px;margin-bottom:19px}
+ .admin-console .metrics article{padding:17px 14px;border-radius:17px}
+ .admin-console .metrics strong{font-size:31px;margin:8px 0}
+ .admin-console .metrics article>span{font-size:12px;line-height:1.5}
+ .admin-console .metrics small,.admin-console .metrics a{font-size:11px;line-height:1.55}
+ .admin-console .history-row h3{font-size:15px;line-height:1.6}
+ .admin-console .history-row small{font-size:11px}
+ .admin-console .history-row button{border-radius:11px;font-size:12px}
+ .admin-console label,.admin-console legend{font-size:14px}
+ .admin-console .updated-at{font-size:11px}
+ .admin-console .device-card{border-radius:15px;padding:17px}
+ .admin-console .admin-dialog{border-radius:26px 26px 0 0;padding-top:28px}
+ .admin-console .admin-dialog::before{content:"";position:absolute;left:calc(50% - 18px);top:9px;width:36px;height:4px;background:#d2dbe7;border-radius:5px}
+ .admin-bottom-bar{background:rgba(255,255,255,.96);box-shadow:0 -3px 18px #18385806;border-top-color:#e6ecf4;font-family:var(--admin-font);padding-top:6px}
+ .admin-bottom-bar a{position:relative;z-index:1;font-size:11px;gap:4px;border-radius:14px;transition:color 180ms ease,transform 200ms var(--admin-ease);background:transparent!important}
+ .admin-bottom-bar a:active{transform:scale(.94)}
+ .admin-bottom-bar .bottom-icon{transition:transform 240ms var(--admin-ease)}
+ .admin-bottom-bar a.active .bottom-icon{transform:translateY(-1px) scale(1.04)}
+ .nav-active-indicator{display:block;pointer-events:none;position:absolute;top:6px;left:4px;width:calc((100% - 8px)/5);height:52px;border-radius:15px;background:#edf3fe;transform:translateX(calc(var(--nav-index,0)*100%));transition:transform 300ms var(--admin-ease)}
+ .admin-chat .thread-header{padding:12px 14px;min-height:76px;background:#fcfdff}
+ .admin-chat .thread-header h2{font-size:16px;line-height:1.45}
+ .admin-chat .thread-header p{font-size:11px}
+ .admin-chat .thread-tools button{width:38px;height:38px;border-radius:12px;padding:0;background:#f0f4fb;border-color:#e4ebf5}
+ .admin-chat .thread-tools .button-caption{display:none}
+ .admin-chat .thread-tools .admin-icon{width:19px;height:19px}
+ .admin-chat .conversation-title{font-size:15px}
+ .admin-chat .preview{font-size:13px}
+ .admin-chat .room-meta{font-size:11px}
+ .admin-chat .conversation{border-radius:16px;min-height:80px}
+ .admin-chat .message time{font-size:11px}
+ .admin-chat .bubble{font-size:16px;border-radius:19px;padding:12px 15px}
+ .admin-chat .composer{padding:11px 13px;background:#fcfdff}
+ .admin-chat .composer p{font-size:10px;line-height:1.4}
+ .admin-chat .compose-box textarea{font-size:16px;line-height:1.6}
+ .admin-chat .send{width:38px;height:38px;border-radius:14px}
+ .admin-chat .room-summary{margin-bottom:13px}
+}
+@media(prefers-reduced-motion:reduce){
+ .admin-console *,.admin-chat *,body>.admin-bottom-bar *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+.admin-console .history-list{position:relative}
+.admin-console [aria-busy=true]::after{position:absolute;top:0;left:0;right:0}
+.admin-console #btnReload:disabled .admin-icon{animation:admin-refresh 900ms linear infinite}
+@keyframes admin-refresh{to{transform:rotate(360deg)}}
+/* Progressive enhancement for moving between console and inbox documents. */
+@view-transition{navigation:auto}
+@media(prefers-reduced-motion:no-preference){
+ .admin-bottom-bar{view-transition-name:admin-navigation}
+ ::view-transition-old(root){animation:admin-route-out 110ms ease-out both}
+ ::view-transition-new(root){animation:admin-route-in 180ms var(--admin-ease) both}
+ ::view-transition-group(admin-navigation){animation-duration:180ms}
+ @keyframes admin-route-out{to{opacity:0}}
+ @keyframes admin-route-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+}
+@media(prefers-reduced-motion:reduce){
+ .admin-console #btnReload:disabled .admin-icon{animation:none}
+ ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}
+}
