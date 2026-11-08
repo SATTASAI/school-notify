@@ -28,7 +28,12 @@ async function until(fn){for(let i=0;i<150;i++){if(fn())return;await new Promise
 function draft(x,text){x.$('draft').value=text;x.$('draft').dispatchEvent(new x.w.Event('input'));}
 const t=Date.now()-1000;db.prepare(`INSERT INTO notifications(title,body,url,roles,send_at,status,source,created_at,updated_at,actions) VALUES(?,?,?,'all',?,'done','system',?,?,?)`).run('ประกาศโรงเรียน','ประชุมเวลา 15.30 น.','https://school.test',t,t,t,'[{"title":"รายละเอียด","url":"https://school.test/work"}]');
 const user=await ui('index.html','https://notify.test/?t='+token(),false,true);await until(()=>!user.$('draft').disabled);
-assert(user.$('messenger').classList.contains('room-open'));assert.equal(user.w.document.querySelector('aside'),null);assert.equal(user.w.document.querySelectorAll('main a[href]').length,0);assert.equal(user.$('messages').querySelectorAll('a').length,0);assert.match(user.$('messages').textContent,/ประกาศโรงเรียน/);assert(user.$('connection').classList.contains('quiet'));
+assert(user.$('messenger').classList.contains('room-open'));assert.equal(user.w.document.querySelector('aside'),null);assert.equal(user.$('messages').querySelectorAll('a.detail-link').length,2);assert.equal(user.$('messages').querySelector('a.detail-link').textContent,'รายละเอียด');assert.equal(user.$('messages').querySelectorAll('a[href*="/admin"]').length,0);assert.match(user.$('messages').textContent,/ประกาศโรงเรียน/);assert(user.$('connection').classList.contains('quiet'));
+// Editing only an action on an existing announcement must update recipient buttons.
+db.prepare('UPDATE notifications SET actions=? WHERE id=1').run(JSON.stringify([{title:'งานที่อัปเดตแล้ว',url:'https://school.test/updated-work'}]));
+await user.w.eval('load()');
+assert.equal(user.$('messages').querySelector('a.detail-link').textContent,'งานที่อัปเดตแล้ว');
+assert.equal(user.$('messages').querySelector('a.detail-link').href,'https://school.test/updated-work');
 user.$('threadSettings').click();assert(user.$('personalSettings').hasAttribute('open'));assert(user.$('connectAccount').classList.contains('hidden'));user.$('themePreference').value='dark';user.$('themePreference').onchange();assert.equal(user.w.document.body.dataset.theme,'dark');user.$('textPreference').value='large';user.$('textPreference').onchange();assert.equal(user.w.document.body.dataset.textSize,'large');assert.equal(JSON.parse(user.w.localStorage.getItem('notifyAppearance')).text,'large');user.$('closeSettings').click();assert(!user.$('personalSettings').hasAttribute('open'));
 user.resize(480);assert.equal(user.w.document.documentElement.style.getPropertyValue('--app-height'),'480px');
 draft(user,'<img src=x onerror=alert(1)>');assert.equal(user.w.sessionStorage.getItem('notifyDraft:u:1'),user.$('draft').value);
@@ -76,6 +81,29 @@ const linked=a.w.eval('appendMessageBody')(linksNode,notice);a.w.eval('appendMes
 assert.equal(linksNode.querySelectorAll('a').length,3);
 assert.equal(linksNode.querySelectorAll('a.message-link').length,1);
 assert.deepEqual([...linksNode.querySelectorAll('a')].map(n=>n.textContent),[renewal,'อัปเดตข้อมูล','เปิดลิงก์ ↗']);
+// The same announcement keeps its work buttons in admin, standalone and embedded rooms.
+const workUrl='https://system.banpadengschool.ac.th/dmcreport/?view=notices';
+for(const view of [user,a,frame]){
+ view.w.__setMessagesForTest([{id:992,kind:'school',source:'system',title:'แจ้งย้ายเข้าใหม่',body:'กรุณาตรวจสอบข้อมูล',url:workUrl,
+ actions:JSON.stringify([{title:'ตรวจสอบแจ้งย้าย',url:workUrl},{title:'ไม่ปลอดภัย',url:'javascript:alert(1)'}]),created_at:Date.now()}]);
+ const links=[...view.$('messages').querySelectorAll('a.detail-link')];
+ const work=links.filter(link=>link.href===workUrl);assert.equal(work.length,1);assert.equal(work[0].textContent,'ตรวจสอบแจ้งย้าย');
+ assert.equal(work[0].target,'_blank');assert.equal(work[0].rel,'noopener noreferrer');
+ assert.equal(links.some(link=>link.href.startsWith('javascript:')),false);
+ assert.equal(links.some(link=>link.textContent.includes('ตรวจผลการส่ง')),view===a);
+ assert.equal(view.$('messages').querySelector('.message').classList.contains('outgoing'),view===a,'sender perspective must stay correct');
+}
+for(const file of ['index.html','inbox.html']){
+ const html=await fs.readFile(root+'public/'+file,'utf8');assert(html.indexOf('/room-ui.css')>html.indexOf('/chat.css'));
+ if(file==='inbox.html')assert(html.indexOf('/room-ui.css')>html.indexOf('/admin-ui.css'));
+}
+// Both room roles use the same movement, only for genuinely new messages.
+for(const view of [user,a]){
+ const row=view.w.document.createElement('article');row.className='message outgoing';const animations=[];
+ row.animate=(frames,options)=>animations.push({frames,options});view.w.eval('revealMessage')(row);
+ assert.equal(animations.length,1);assert.equal(animations[0].options.duration,180);
+ const media=view.w.matchMedia;view.w.matchMedia=()=>({matches:true});view.w.eval('revealMessage')(row);assert.equal(animations.length,1);view.w.matchMedia=media;
+}
 // Existing renewal messages discard stale detail/account links and expose only KSP.
 for(const view of [user,a]){
  const bubble=view.w.document.createElement('div');
@@ -85,4 +113,4 @@ for(const view of [user,a]){
  assert.equal(bubble.querySelectorAll('a').length,1);assert.equal(bubble.querySelector('a').href,renewal);
  assert.equal(bubble.querySelector('a').textContent,'ต่ออายุใบประกอบวิชาชีพ ↗');assert(!bubble.textContent.includes('ต่ออายุ:'));
 }
-assert.equal(errors.length,0);for(const x of [user,a,signedout,frame]){x.dom.window.close();x.parent?.close();}console.log('✓ App UI: single room, no outgoing links, personal settings, appearance persistence, viewport resize, instant send, draft recovery, retry identity, embedded visibility/draft/scroll retention and admin compatibility');
+assert.equal(errors.length,0);for(const x of [user,a,signedout,frame]){x.dom.window.close();x.parent?.close();}console.log('✓ App UI: shared room UI and work actions, safe links, personal settings, appearance persistence, viewport resize, instant send, draft recovery, retry identity, embedded visibility/draft/scroll retention and admin compatibility');
