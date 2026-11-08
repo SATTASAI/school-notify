@@ -85,3 +85,5 @@ body.user-chat{--surface:#fff;--canvas:#f3f6fa;--ink:#24344b;--muted:#8492a4;--l
 .message.outgoing .bubble .detail-link{background:#fff;color:#174eaa;border-color:#fff}
 .user-chat[data-theme=dark] .message:not(.outgoing) .bubble a{color:#a8ccff}
 .message .bubble a:focus-visible{outline:3px solid #ffca5c;outline-offset:3px}
+
+.user-chat[data-theme=dark] .message:not(.outgoing) .bubble .detail-link{color:#174eaa}
