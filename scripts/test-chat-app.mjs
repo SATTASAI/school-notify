@@ -55,4 +55,15 @@ for(const message of [
  {kind:'school',source:'admin-reply',body:renewal},
  {kind:'school',source:'system',body:'https://selfservice.ksp.or.th.evil.test/ https://selfservice.ksp.or.th/@evil https://evil.test/'},
 ]){const n=user.w.document.createElement('div');user.w.eval('appendMessageBody')(n,message);assert.equal(n.querySelectorAll('a').length,0);assert.equal(n.textContent,message.body);}
+// Link destinations are unique across inline body links, actions and the detail URL.
+const linksNode=a.w.document.createElement('div');
+const notice={kind:'school',source:'system',body:'ต่ออายุ: '+renewal+'\n'+renewal,
+ url:'https://school.test/account',actions:JSON.stringify([
+ {title:'ต่ออายุ',url:renewal},{title:'อัปเดตข้อมูล',url:'https://school.test/account'},
+ {title:'ซ้ำ',url:'https://school.test/account'},{title:'',url:'https://school.test/another'},
+ {title:'อันตราย',url:'javascript:alert(1)'},null])};
+const linked=a.w.eval('appendMessageBody')(linksNode,notice);a.w.eval('appendMessageActions')(linksNode,notice,linked);
+assert.equal(linksNode.querySelectorAll('a').length,3);
+assert.equal(linksNode.querySelectorAll('a.message-link').length,1);
+assert.deepEqual([...linksNode.querySelectorAll('a')].map(n=>n.textContent),[renewal,'อัปเดตข้อมูล','เปิดลิงก์ ↗']);
 assert.equal(errors.length,0);for(const x of [user,a,signedout,frame]){x.dom.window.close();x.parent?.close();}console.log('✓ App UI: single room, no outgoing links, personal settings, appearance persistence, viewport resize, instant send, draft recovery, retry identity, embedded visibility/draft/scroll retention and admin compatibility');
