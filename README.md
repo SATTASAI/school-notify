@@ -165,3 +165,7 @@ PC ใช้เมนูด้านข้างและจัดพื้น�
 ### Shared conversation design and action buttons (Patch 1.2.5)
 
 Both `index.html` (including the System frame) and `inbox.html` load `room-ui.css` **after** their other stylesheets. Change this shared stylesheet for message cards, typography, work buttons, composer and touch feedback. The admin shell and role-specific tools remain in `admin-ui.css`. Both roles use `revealMessage` for new-message movement; sender direction remains relative to the viewer. School message actions and detail URLs render for recipients as well as admins, with safe URL validation/deduplication. Delivery-report links remain admin-only. The System iframe allows user-activated work links to open a new tab without navigating the dashboard.
+
+### Admin desktop composer visibility — School Patch 1.4.1 (9 พฤศจิกายน 2569)
+
+แก้ช่องพิมพ์ตอบกลับใน `/inbox` หลุดออกนอกจอ PC เมื่อมีรายการห้องหรือประวัติข้อความยาว โดยจำกัดแถวของ grid ให้พอดีความสูง messenger, ให้คอลัมน์รายชื่อห้องย่อได้ และให้เลื่อนแยกภายในรายชื่อห้องกับประวัติข้อความ ช่องพิมพ์และส่วนหัวไม่ถูกบีบหรือตัดทิ้ง รายละเอียดผู้ใช้มีความสูงจำกัดและเลื่อนภายในได้ ใช้ร่วมกับความสูงมือถือและ bottom bar เดิม

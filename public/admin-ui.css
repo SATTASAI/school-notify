@@ -220,3 +220,11 @@ body.admin-console,body.admin-chat{font-family:var(--admin-font);-webkit-font-sm
  .admin-console #btnReload:disabled .admin-icon{animation:none}
  ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}
 }
+
+/* Keep both grid columns inside the viewport even with a long room list. */
+.admin-chat .messenger{grid-template-rows:minmax(0,1fr)}
+.admin-chat .inbox{min-height:0;min-width:0;overflow:hidden}
+.admin-chat .room-list{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.admin-chat .timeline{flex:1 1 0;min-height:0;overflow-y:auto}
+.admin-chat :is(.thread-header,.connection,.composer,.login-gate,.message-filter){flex-shrink:0}
+.admin-chat .room-details{flex-shrink:0;max-height:30%;overflow-y:auto}
