@@ -66,6 +66,12 @@ function appendMessageActions(bubble,message,linked){
     link.href=renewalUrl;link.target='_blank';link.rel='noopener noreferrer';bubble.append(link);return;
   }
   let actions=[];try{const parsed=JSON.parse(message.actions||'[]');if(Array.isArray(parsed))actions=parsed;}catch{}
+  const detailsUrl=message.source==='system'&&message.url&&safeLink(message.url);
+  if(detailsUrl&&/^https:\/\/system\.banpadengschool\.ac\.th\/notification\.html\?key=leave(?:%3a|:)\d+(?:%3a|:)[a-z]+$/i.test(detailsUrl)){
+    // Older leave messages used short-lived summary links. The school inbox resolves the current work link.
+    actions=actions.map(action=>/^https:\/\/system\.banpadengschool\.ac\.th\/leave-view\.html\?token=/.test(action?.url||'')
+      ? {title:'เปิดคำขอลา',url:detailsUrl} : action);
+  }
   for(const action of [...actions,...(message.url?[{title:'ดูรายละเอียด ↗',url:message.url}]:[])]){
     if(!action?.url)continue;
     const href=safeLink(action.url);if(!href||linked.has(href))continue;
