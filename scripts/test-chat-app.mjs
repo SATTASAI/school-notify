@@ -45,9 +45,11 @@ const frame=await ui('index.html','https://notify.test/?t='+token('u:8')+'&embed
 assert(frame.w.document.body.classList.contains('embedded-chat'));assert.equal(frame.reads,0,'hidden frame initialization cannot mark messages read');assert(frame.posted.some(p=>p.data.type==='school-chat-ready'&&p.origin==='https://system.banpadengschool.ac.th'));
 frame.signal(true,'https://evil.test');await new Promise(r=>setImmediate(r));assert.equal(frame.reads,0);
 frame.signal(true,'https://system.banpadengschool.ac.th',frame.w);await new Promise(r=>setImmediate(r));assert.equal(frame.reads,0);
-frame.signal(true);await until(()=>frame.posted.some(p=>p.data.type==='school-chat-read'));assert(frame.reads>0);
-draft(frame,'เก็บข้อความร่างเมื่อย่อแชท');frame.$('timeline').scrollTop=123;frame.signal(false);const beforeRequests=frame.requests;await frame.timers.find(t=>t.ms===15000).fn();assert.equal(frame.requests,beforeRequests,'hidden chat must stop polling');assert.equal(frame.$('draft').value,'เก็บข้อความร่างเมื่อย่อแชท');
-frame.signal(true);await new Promise(r=>setImmediate(r));assert.equal(frame.$('draft').value,'เก็บข้อความร่างเมื่อย่อแชท');assert.equal(frame.$('timeline').scrollTop,123);assert(frame.w.location.search.includes('embedded=1'));await until(()=>!frame.w.__chatTesting().loading);
+frame.signal(true);await until(()=>!frame.w.__chatTesting().loading&&frame.posted.some(p=>p.data.type==='school-chat-read'));assert(frame.reads>0);
+await new Promise(resolve=>frame.w.requestAnimationFrame(resolve));
+const timeline=frame.$('timeline');Object.defineProperties(timeline,{scrollHeight:{value:1000},clientHeight:{value:450}});
+draft(frame,'เก็บข้อความร่างเมื่อย่อแชท');timeline.scrollTop=123;frame.signal(false);const beforeRequests=frame.requests;await frame.timers.find(t=>t.ms===15000).fn();assert.equal(frame.requests,beforeRequests,'hidden chat must stop polling');assert.equal(frame.$('draft').value,'เก็บข้อความร่างเมื่อย่อแชท');
+frame.signal(true);await until(()=>!frame.w.__chatTesting().loading);assert.equal(frame.$('draft').value,'เก็บข้อความร่างเมื่อย่อแชท');assert.equal(timeline.scrollTop,123);assert(frame.w.location.search.includes('embedded=1'));
 // Renewal links are tappable only for official school system messages; HTML stays text.
 const renewal='https://selfservice.ksp.or.th/';
 const bodyNode=user.w.document.createElement('div');

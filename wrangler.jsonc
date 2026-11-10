@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "school-notify",
-  "main": "src/index.js",
+  "main": "src/worker.js",
   "compatibility_date": "2026-05-15",
   "keep_vars": true,
   "version_metadata": { "binding": "UI_VERSION" },
