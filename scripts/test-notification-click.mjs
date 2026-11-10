@@ -35,6 +35,9 @@ for(const path of ['/leave.html?request=7','/leave.html?view=approval&request=7'
  assert.equal((await click(setup(),{workUrl,actions:['/leave.html?request=8']},'a0')).searchParams.get('request'),'8');
 }
 assert.equal((await click(setup(),{id:42,workUrl:'https://example.com/leave.html'})).searchParams.get('message'),'42');
+const album='https://activity.banpadengschool.ac.th/#/album/7';
+assert.equal((await click(setup(),{id:42,workUrl:album})).searchParams.get('to'),album);
+assert.equal((await click(setup(),{id:42,workUrl:'https://activity.banpadengschool.ac.th/'})).searchParams.get('message'),'42');
 assert.equal((await click(setup(),{actions:['javascript:alert(1)']},'a0')).pathname,system?'/notify-chat.html':'/');
 const pushed=setup(),workUrl='https://system.banpadengschool.ac.th/leave.html?request=7';let pending;pushed.listeners.push({data:{json:()=>({id:42,title:'test',workUrl})},waitUntil(p){pending=p;}});await pending;assert.equal(pushed.shown.data.id,42);assert.equal(pushed.shown.data.workUrl,workUrl);
 console.log('✓ Notification click: immediate window open, correct origin, message IDs, legacy banners, recovery and action buttons');

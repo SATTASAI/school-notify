@@ -147,7 +147,7 @@ function parseSendAt(v) {
   return Number.isFinite(t) ? t : NaN;
 }
 
-async function createNotification(req, env, ctx) {
+export async function createNotification(req, env, ctx) {
   const b = await readJson(req);
   const title = (b?.title || '').toString().trim().slice(0, 120);
   const body = (b?.body || '').toString().trim().slice(0, 1000);
@@ -220,7 +220,8 @@ async function processBatch(env, id) {
 
   if (results.length) {
     const vapid = await getVapid(env);
-    const workUrl = n.source === 'system' && n.url?.startsWith('https://system.banpadengschool.ac.th/') ? n.url : undefined;
+    const workUrl = (n.source === 'system' && n.url?.startsWith('https://system.banpadengschool.ac.th/')) ||
+      (n.source === 'bpdactivity-album' && /^https:\/\/activity\.banpadengschool\.ac\.th\/#\/album\/\d+$/.test(n.url || '')) ? n.url : undefined;
     const payload = JSON.stringify({ title: n.title, body: n.body, url: 'https://notify.banpadengschool.ac.th/?chat=1&message=' + n.id, workUrl, tag: `n${n.id}`, id: n.id, actions: n.actions ? JSON.parse(n.actions) : undefined });
     const statuses = await Promise.all(results.map((r) => sendPush(r, payload, vapid, subject(env)).catch(() => 0)));
     const t = now();
