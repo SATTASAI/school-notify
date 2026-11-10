@@ -220,7 +220,8 @@ async function processBatch(env, id) {
 
   if (results.length) {
     const vapid = await getVapid(env);
-    const payload = JSON.stringify({ title: n.title, body: n.body, url: 'https://notify.banpadengschool.ac.th/?chat=1&message=' + n.id, tag: `n${n.id}`, id: n.id, actions: n.actions ? JSON.parse(n.actions) : undefined });
+    const workUrl = n.source === 'system' && n.url?.startsWith('https://system.banpadengschool.ac.th/') ? n.url : undefined;
+    const payload = JSON.stringify({ title: n.title, body: n.body, url: 'https://notify.banpadengschool.ac.th/?chat=1&message=' + n.id, workUrl, tag: `n${n.id}`, id: n.id, actions: n.actions ? JSON.parse(n.actions) : undefined });
     const statuses = await Promise.all(results.map((r) => sendPush(r, payload, vapid, subject(env)).catch(() => 0)));
     const t = now();
     const stmts = [];

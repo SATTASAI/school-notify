@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
 const file=process.argv[2] || new URL('../public/sw.js',import.meta.url);
-const system=String(file).includes('school-system');
+const system=/school-system|banpadeng-school-db/.test(String(file));
 const origin=system?'https://system.banpadengschool.ac.th':'https://notify.banpadengschool.ac.th';
 const source=await readFile(file,'utf8');
 function setup({reject=false,lookupFails=false}={}){
@@ -27,6 +27,14 @@ const fallback=setup({reject:true});await click(fallback,{id:4});assert.deepEqua
 await click(setup({reject:true,lookupFails:true}),{url:'http://['});
 const action=await click(setup(),{actions:['/leave.html?request=7']},'a0');assert.equal(action.pathname,'/leave.html');
 const external=await click(setup(),{actions:['https://example.com/detail']},'a0');assert.equal(external.pathname,'/go.html');assert.equal(external.searchParams.get('to'),'https://example.com/detail');
+for(const path of ['/leave.html?request=7','/leave.html?view=approval&request=7','/notification.html']){
+ const workUrl='https://system.banpadengschool.ac.th'+path;
+ const target=await click(setup(),{id:42,workUrl});
+ assert.equal(system?target.href:target.searchParams.get('to'),workUrl);
+ if(!system)assert.equal(target.pathname,'/go.html');
+ assert.equal((await click(setup(),{workUrl,actions:['/leave.html?request=8']},'a0')).searchParams.get('request'),'8');
+}
+assert.equal((await click(setup(),{id:42,workUrl:'https://example.com/leave.html'})).searchParams.get('message'),'42');
 assert.equal((await click(setup(),{actions:['javascript:alert(1)']},'a0')).pathname,system?'/notify-chat.html':'/');
-const pushed=setup();let pending;pushed.listeners.push({data:{json:()=>({id:42,title:'test'})},waitUntil(p){pending=p;}});await pending;assert.equal(pushed.shown.data.id,42);
+const pushed=setup(),workUrl='https://system.banpadengschool.ac.th/leave.html?request=7';let pending;pushed.listeners.push({data:{json:()=>({id:42,title:'test',workUrl})},waitUntil(p){pending=p;}});await pending;assert.equal(pushed.shown.data.id,42);assert.equal(pushed.shown.data.workUrl,workUrl);
 console.log('✓ Notification click: immediate window open, correct origin, message IDs, legacy banners, recovery and action buttons');

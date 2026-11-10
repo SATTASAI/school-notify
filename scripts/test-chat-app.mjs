@@ -45,7 +45,7 @@ const frame=await ui('index.html','https://notify.test/?t='+token('u:8')+'&embed
 assert(frame.w.document.body.classList.contains('embedded-chat'));assert.equal(frame.reads,0,'hidden frame initialization cannot mark messages read');assert(frame.posted.some(p=>p.data.type==='school-chat-ready'&&p.origin==='https://system.banpadengschool.ac.th'));
 frame.signal(true,'https://evil.test');await new Promise(r=>setImmediate(r));assert.equal(frame.reads,0);
 frame.signal(true,'https://system.banpadengschool.ac.th',frame.w);await new Promise(r=>setImmediate(r));assert.equal(frame.reads,0);
-frame.signal(true);await until(()=>frame.reads>0);assert(frame.posted.some(p=>p.data.type==='school-chat-read'));
+frame.signal(true);await until(()=>frame.posted.some(p=>p.data.type==='school-chat-read'));assert(frame.reads>0);
 draft(frame,'เก็บข้อความร่างเมื่อย่อแชท');frame.$('timeline').scrollTop=123;frame.signal(false);const beforeRequests=frame.requests;await frame.timers.find(t=>t.ms===15000).fn();assert.equal(frame.requests,beforeRequests,'hidden chat must stop polling');assert.equal(frame.$('draft').value,'เก็บข้อความร่างเมื่อย่อแชท');
 frame.signal(true);await new Promise(r=>setImmediate(r));assert.equal(frame.$('draft').value,'เก็บข้อความร่างเมื่อย่อแชท');assert.equal(frame.$('timeline').scrollTop,123);assert(frame.w.location.search.includes('embedded=1'));await until(()=>!frame.w.__chatTesting().loading);
 // Renewal links are tappable only for official school system messages; HTML stays text.
@@ -96,6 +96,13 @@ for(const view of [user,a,frame]){
 for(const file of ['index.html','inbox.html']){
  const html=await fs.readFile(root+'public/'+file,'utf8');assert(html.indexOf('/room-ui.css')>html.indexOf('/chat.css'));
  if(file==='inbox.html')assert(html.indexOf('/room-ui.css')>html.indexOf('/admin-ui.css'));
+}
+const legacyLeaveUrl='https://system.banpadengschool.ac.th/notification.html?key=leave%3A7%3Apending';
+for(const view of [user,frame]){
+ view.w.__setMessagesForTest([{id:993,kind:'school',source:'system',title:'การลา',url:legacyLeaveUrl,
+  actions:JSON.stringify([{title:'เปิดใบลา',url:'https://system.banpadengschool.ac.th/leave-view.html?token=expired'},{title:'ดูรายละเอียด',url:legacyLeaveUrl}]),created_at:Date.now()}]);
+ const links=view.$('messages').querySelectorAll('a.detail-link');
+ assert.equal(links.length,1);assert.equal(links[0].href,legacyLeaveUrl);
 }
 // Both room roles use the same movement, only for genuinely new messages.
 for(const view of [user,a]){
