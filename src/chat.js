@@ -89,6 +89,10 @@ export async function chatRoute(req, env, ctx, { verifyLinkToken, hmac, authoriz
     const b = await req.json().catch(() => null);
     const at = Math.min(Date.now(), Number(b?.at) || 0);
     await env.DB.prepare(`UPDATE conversations SET ${admin?'admin_read_at':'user_read_at'}=MAX(${admin?'admin_read_at':'user_read_at'},?) WHERE ref=?`).bind(at,ref).run();
+    // Reading the room also counts as reading every notification already sent to this account's devices.
+    if (!admin && at) await env.DB.prepare(`UPDATE deliveries SET read_at=?1 WHERE read_at IS NULL
+      AND subscription_id IN (SELECT id FROM subscriptions WHERE instr(refs, ','||?2||',')>0)
+      AND notification_id IN (SELECT id FROM notifications WHERE send_at<=?3)`).bind(Date.now(),ref,at).run().catch(e => console.error('read receipts', e));
     return json({ ok: true });
   }
   if (path === '/api/chat/messages' && method === 'POST') {

@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS deliveries (
   subscription_id INTEGER NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending',
   http_status INTEGER,
+  read_at INTEGER,                   -- เวลาที่ผู้รับกดเปิด/อ่าน (คลิกแจ้งเตือนหรือเปิดห้องข้อความ)
   UNIQUE(notification_id, subscription_id)
 );
 CREATE INDEX IF NOT EXISTS idx_deliveries_pending ON deliveries(notification_id, status);

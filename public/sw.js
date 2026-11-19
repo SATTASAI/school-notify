@@ -31,6 +31,18 @@ function clickDestination(data, action) {
   } catch { return fallback.href; }
 }
 
+// Tell the school which device opened this notification ("อ่านแล้ว" in the admin report). Never blocks the click.
+async function reportRead(data) {
+  try {
+    let id = data.id;
+    try { id ||= new URL(data.url, self.location.origin).searchParams.get('message'); } catch {}
+    if (!/^\d+$/.test(String(id || ''))) return;
+    const sub = await self.registration.pushManager.getSubscription();
+    if (!sub) return;
+    await fetch('/api/read', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: Number(id), endpoint: sub.endpoint }) });
+  } catch (error) { console.error('read receipt', error); }
+}
+
 async function reuseWindow(url) {
   const list = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
   for (const client of list) {
@@ -49,5 +61,8 @@ self.addEventListener('notificationclick', e => {
   // iOS must receive openWindow directly from the click event, without an asynchronous lookup first.
   let opening;
   try { opening = self.clients.openWindow(url); } catch (error) { opening = Promise.reject(error); }
-  e.waitUntil(Promise.resolve(opening).catch(() => reuseWindow(url)).catch(error => console.error('notificationclick', error)));
+  e.waitUntil(Promise.all([
+    Promise.resolve(opening).catch(() => reuseWindow(url)).catch(error => console.error('notificationclick', error)),
+    reportRead(e.notification.data || {}),
+  ]));
 });

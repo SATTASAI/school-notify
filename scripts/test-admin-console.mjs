@@ -6,7 +6,7 @@ import {fixture} from './chat-fixture.mjs';
 const {db,env}=await fixture();const t=Date.now();
 for(let i=1;i<=65;i++)db.prepare(`INSERT INTO notifications(id,title,body,roles,refs,source,send_at,status,total,sent,failed,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(i,'ประกาศ '+i,i===65?'<img src=x onerror=alert(1)>':'รายละเอียด '+i,'teacher','["u:1"]','system',t+86400000,i===65?'done':'scheduled',i===65?3:0,i===65?1:0,i===65?1:0,t,t);
 db.prepare(`INSERT INTO subscriptions(id,endpoint,p256dh,auth,roles,refs,label,user_agent,created_at,updated_at) VALUES(1,'https://secret-push.test/key','PRIVATE-P256','PRIVATE-AUTH',',teacher,',',u:1,','ครูทดสอบ','iPhone',?,?)`).run(t,t);
-for(const [id,subscription_id,status,http] of [[1,1,'ok',201],[2,2,'fail',410],[3,3,'pending',null]])db.prepare('INSERT INTO deliveries VALUES(?,?,?,?,?)').run(id,65,subscription_id,status,http);
+for(const [id,subscription_id,status,http] of [[1,1,'ok',201],[2,2,'fail',410],[3,3,'pending',null]])db.prepare('INSERT INTO deliveries(id,notification_id,subscription_id,status,http_status) VALUES(?,?,?,?,?)').run(id,65,subscription_id,status,http);
 async function request(path,auth=true,method='GET',body){return worker.fetch(new Request('https://notify.test'+path,{method,headers:{...(auth?{authorization:'Bearer test-admin'}:{}),'content-type':'application/json'},...(body?{body:JSON.stringify(body)}:{})}),env,{waitUntil(){}});}
 assert.equal((await request('/api/admin/notifications',false)).status,401);
 let report=await (await request('/api/admin/notifications?offset=30')).json();assert.equal(report.total,65);assert.equal(report.notifications.length,30);assert.equal(report.notifications[0].id,35);assert.equal(report.summary.scheduled,64);

@@ -87,3 +87,4 @@ body.user-chat{--surface:#fff;--canvas:#f3f6fa;--ink:#24344b;--muted:#8492a4;--l
 .message .bubble a:focus-visible{outline:3px solid #ffca5c;outline-offset:3px}
 
 .user-chat[data-theme=dark] .message:not(.outgoing) .bubble .detail-link{color:#174eaa}
+.message time.read{color:#1a7f4b;font-weight:600}

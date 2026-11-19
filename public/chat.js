@@ -1,3 +1,4 @@
+let roomRead=null;
 const $ = id => document.getElementById(id);
 const admin = document.body.dataset.admin === 'true';
 const qs = new URLSearchParams(location.search);
@@ -99,7 +100,8 @@ function render(scroll=false){
     const linked=appendMessageBody(bubble,m);
     if(m.kind==='school')appendMessageActions(bubble,m,linked);
     if(admin&&m.kind==='school'&&!isRenewalMessage(m)){const report=node('a','detail-link','ตรวจผลการส่งรายเครื่อง ↗');report.href='/admin?notification='+encodeURIComponent(m.id);report.target='_blank';report.rel='noopener noreferrer';bubble.append(report);}
-    content.append(bubble,node('time','',m.pending?'กำลังส่ง…':fmtTime(m.created_at)+(outgoing?(admin?' · ส่งแล้ว':' · ส่งแล้ว ✓'):'')));row.append(content);fragment.append(row);previous=m;
+    const seen=outgoing&&!m.pending&&roomRead&&m.created_at<=(admin?roomRead.user_read_at:roomRead.admin_read_at);
+    content.append(bubble,node('time',seen?'read':'',m.pending?'กำลังส่ง…':fmtTime(m.created_at)+(outgoing?(seen?' · อ่านแล้ว ✓✓':admin?' · ส่งแล้ว':' · ส่งแล้ว ✓'):'')));row.append(content);fragment.append(row);previous=m;
   }
   $('messages').replaceChildren(fragment);if(admin)filterMessages();for(const row of newRows)revealMessage(row);$('welcome').classList.toggle('hidden',messages.length>0||Boolean(optimistic));$('older').classList.toggle('hidden',!more);
   if(!admin && $('preview')){const last=messages.at(-1);$('preview').textContent=last?(last.kind==='user'?'คุณ: ':'')+(last.body||last.title):'ประกาศและข้อความจากโรงเรียน';}
@@ -131,7 +133,8 @@ async function load(older=false){
       $('connectAccount').classList.add('hidden');$('logout').classList.remove('hidden');
     }
     const stick=nearBottom(), oldHeight=$('timeline').scrollHeight, oldTop=$('timeline').scrollTop;
-    let changed=false;
+    let changed=!roomRead||roomRead.user_read_at!==data.room.user_read_at||roomRead.admin_read_at!==data.room.admin_read_at;
+    roomRead={user_read_at:data.room.user_read_at||0,admin_read_at:data.room.admin_read_at||0};
     for(const m of data.messages){const key=m.kind+'-'+m.id;const old=cache.get(key);if(!old||['created_at','body','title','url','actions','source'].some(key=>old[key]!==m[key])){changed=true;}cache.set(key,m);}
     messages=[...cache.values()].sort((a,b)=>a.created_at-b.created_at||a.kind.localeCompare(b.kind)||a.id-b.id);
     if(older||!before){before=data.before;more=data.more;}
@@ -169,7 +172,7 @@ async function loadRooms(){const data=await api('conversations');rooms=data.conv
 async function selectRoom(room){
   // Preserve each unsent draft while switching rooms.
   if(ref)sessionStorage.setItem('notifyDraft:'+ref,$('draft').value);
-  ref=room.ref;cache.clear();messages=[];before=null;more=false;pendingId=null;
+  ref=room.ref;cache.clear();messages=[];roomRead=null;before=null;more=false;pendingId=null;
   document.querySelector('.header-copy h2').textContent=room.label;
   const headerNote=document.querySelector('.header-copy p');if(headerNote)headerNote.textContent=room.ref+' · ห้องข้อความส่วนตัว';
   roomDetails(room);if($('showRoomDetails'))$('showRoomDetails').disabled=false;if($('findMessages'))$('findMessages').disabled=false;
