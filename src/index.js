@@ -267,6 +267,16 @@ async function finish(env, id) {
   ).bind(now(), id).run();
 }
 
+// Service worker reports a notification click. The push endpoint identifies the device; nothing else is accepted.
+async function markDeliveryRead(req, env) {
+  const b = await readJson(req);
+  const id = Number(b?.id), endpoint = typeof b?.endpoint === 'string' ? b.endpoint : '';
+  if (!Number.isInteger(id) || id <= 0 || !endpoint || endpoint.length > 1000) return json({ error: 'invalid' }, 400);
+  await env.DB.prepare(`UPDATE deliveries SET read_at=? WHERE read_at IS NULL AND notification_id=?
+    AND subscription_id=(SELECT id FROM subscriptions WHERE endpoint=?)`).bind(Date.now(), id, endpoint).run();
+  return json({ ok: true });
+}
+
 async function listNotifications(env) {
   const { results } = await env.DB.prepare(
     `SELECT n.*, (SELECT COUNT(*) FROM deliveries d WHERE d.notification_id = n.id AND d.status = 'ok') AS ok_now
@@ -375,6 +385,7 @@ export default {
       if (p === '/api/subscription' && m === 'POST') return await subscriptionInfo(req, env);
       if (p === '/api/unsubscribe' && m === 'POST') return await unsubscribe(req, env);
       if (p === '/api/test' && m === 'POST') return await testPush(req, env);
+      if (p === '/api/read' && m === 'POST') return await markDeliveryRead(req, env);
 
       if (p === '/internal/continue' && m === 'POST') {
         if (!safeEqual(req.headers.get('x-internal-key') || '', env.API_KEY)) return json({ error: 'forbidden' }, 403);

@@ -12,7 +12,8 @@ export async function adminReports(req,env,deviceOf){
   const where=terms.length?' WHERE '+terms.join(' AND '):'',offset=offsetOf(url);
   const [{results},count,summary]=await Promise.all([
    env.DB.prepare(`SELECT n.*,(SELECT COUNT(*) FROM deliveries d WHERE d.notification_id=n.id AND d.status='ok') ok_now,
-    (SELECT COUNT(*) FROM deliveries d WHERE d.notification_id=n.id AND d.status='fail') failed_now
+    (SELECT COUNT(*) FROM deliveries d WHERE d.notification_id=n.id AND d.status='fail') failed_now,
+    (SELECT COUNT(*) FROM deliveries d WHERE d.notification_id=n.id AND d.read_at IS NOT NULL) read_now
     FROM notifications n${where} ORDER BY n.id DESC LIMIT 30 OFFSET ?`).bind(...values,offset).all(),
    env.DB.prepare(`SELECT COUNT(*) total FROM notifications n${where}`).bind(...values).first(),
    env.DB.prepare(`SELECT COUNT(*) total,SUM(status='scheduled') scheduled,SUM(status IN ('queued','sending')) processing,
@@ -26,8 +27,8 @@ export async function adminReports(req,env,deviceOf){
   if(!notification)return json({error:'ไม่พบการแจ้งเตือน'},404);
   const offset=offsetOf(url),filter=url.searchParams.get('delivery'),where=['ok','fail','pending'].includes(filter)?' AND d.status=?':'',values=where?[id,filter]:[id];
   const [counts,{results},count]=await Promise.all([
-   env.DB.prepare(`SELECT COUNT(*) total,SUM(status='ok') ok,SUM(status='fail') fail,SUM(status='pending') pending FROM deliveries WHERE notification_id=?`).bind(id).first(),
-   env.DB.prepare(`SELECT d.id,d.subscription_id,d.status,d.http_status,s.label,s.refs,s.roles,s.user_agent,s.last_ok_at
+   env.DB.prepare(`SELECT COUNT(*) total,SUM(status='ok') ok,SUM(status='fail') fail,SUM(status='pending') pending,SUM(read_at IS NOT NULL) read FROM deliveries WHERE notification_id=?`).bind(id).first(),
+   env.DB.prepare(`SELECT d.id,d.subscription_id,d.status,d.http_status,d.read_at,s.label,s.refs,s.roles,s.user_agent,s.last_ok_at
     FROM deliveries d LEFT JOIN subscriptions s ON s.id=d.subscription_id WHERE d.notification_id=?${where} ORDER BY d.id LIMIT 30 OFFSET ?`).bind(...values,offset).all(),
    env.DB.prepare(`SELECT COUNT(*) total FROM deliveries d WHERE d.notification_id=?${where}`).bind(...values).first(),
   ]);
