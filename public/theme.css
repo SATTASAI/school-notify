@@ -1,0 +1,144 @@
+/* Premium iOS-style theme. Loaded last; follows the device light/dark setting. */
+body.admin-console,body.admin-chat{
+ --ios-bg:#f2f2f7;--ios-card:#fff;--ios-card2:#f7f7fa;--ios-label:#1c1c1e;--ios-label2:rgba(60,60,67,.66);--ios-label3:rgba(60,60,67,.38);
+ --ios-sep:rgba(60,60,67,.13);--ios-fill:rgba(118,118,128,.12);--ios-fill2:rgba(118,118,128,.07);
+ --ios-accent:#007aff;--ios-tint:rgba(0,122,255,.11);--ios-green:#248a3d;--ios-green-tint:rgba(52,199,89,.15);--ios-orange:#c26b00;--ios-orange-tint:rgba(255,149,0,.15);--ios-red:#d70015;--ios-red-tint:rgba(255,59,48,.12);--ios-indigo:#5856d6;
+ --ios-bar:rgba(249,249,251,.78);--ios-shadow:0 1px 1px rgba(0,0,0,.02),0 6px 20px rgba(17,24,39,.05);--ios-shadow-lg:0 18px 50px rgba(17,24,39,.14);
+ --ios-font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Sarabun",system-ui,sans-serif;--ios-ease:cubic-bezier(.32,.72,0,1);
+ /* map legacy tokens */
+ --blue:var(--ios-accent);--ux-blue:var(--ios-accent);--ink:var(--ios-label);--muted:var(--ios-label2);--line:var(--ios-sep);--bg:var(--ios-bg);--navy:var(--ios-label);
+ color-scheme:light;font-family:var(--ios-font);background:var(--ios-bg)!important;color:var(--ios-label)
+}
+@media(prefers-color-scheme:dark){body.admin-console,body.admin-chat{
+ --ios-bg:#000;--ios-card:#1c1c1e;--ios-card2:#151517;--ios-label:#f5f5f7;--ios-label2:rgba(235,235,245,.62);--ios-label3:rgba(235,235,245,.32);
+ --ios-sep:rgba(84,84,88,.55);--ios-fill:rgba(118,118,128,.24);--ios-fill2:rgba(118,118,128,.14);
+ --ios-accent:#0a84ff;--ios-tint:rgba(10,132,255,.2);--ios-green:#30d158;--ios-green-tint:rgba(48,209,88,.17);--ios-orange:#ff9f0a;--ios-orange-tint:rgba(255,159,10,.17);--ios-red:#ff453a;--ios-red-tint:rgba(255,69,58,.17);--ios-indigo:#5e5ce6;
+ --ios-bar:rgba(22,22,24,.78);--ios-shadow:none;--ios-shadow-lg:0 20px 60px rgba(0,0,0,.6);color-scheme:dark}}
+
+:is(body.admin-console,body.admin-chat) :is(button,input,textarea,select){font-family:var(--ios-font)}
+body.admin-console :is(h1,h2,h3),body.admin-chat :is(h1,h2,h3){color:var(--ios-label);letter-spacing:-.02em}
+body.admin-console a,body.admin-chat a{color:var(--ios-accent)}
+body.admin-console :is(.muted,.eyebrow,.updated-at,.history-row small,.device-card p,.metrics small,.metrics a){color:var(--ios-label2)}
+body.admin-console :is(.eyebrow,.updated-at){color:var(--ios-label3)}
+
+/* Buttons */
+body.admin-console button{background:var(--ios-accent);color:#fff;border:0;border-radius:12px;font-weight:600;box-shadow:none}
+body.admin-console button.secondary,body.admin-console .secondary{background:var(--ios-fill);color:var(--ios-accent);border:0}
+body.admin-console button.danger{background:var(--ios-red-tint);color:var(--ios-red);border:0}
+body.admin-console button.text-button{background:none;color:var(--ios-accent)}
+body.admin-console button:hover{filter:brightness(.97)}
+body.admin-console .quick-link{background:var(--ios-fill2)!important;border:0!important;color:var(--ios-label)!important;border-radius:12px}
+
+/* Inputs */
+body.admin-console :is(input:not([type=checkbox]),textarea,select),body.admin-chat :is(.admin-search,.message-filter input){background:var(--ios-fill);border:1px solid transparent;border-radius:12px;color:var(--ios-label)}
+body.admin-console :is(input,textarea)::placeholder,body.admin-chat :is(input,textarea)::placeholder{color:var(--ios-label3)}
+body.admin-console :is(input,textarea,select):focus{background:var(--ios-card);border-color:var(--ios-accent);box-shadow:0 0 0 4px var(--ios-tint)}
+body.admin-console .chips label{border:0;background:var(--ios-fill2);border-radius:12px;color:var(--ios-label)}
+body.admin-console :is(.chips input,input[type=checkbox]){accent-color:var(--ios-accent)}
+
+/* Surfaces */
+body.admin-console :is(.panel,.metrics article){background:var(--ios-card);border:0;border-radius:22px;box-shadow:var(--ios-shadow)}
+body.admin-console .device-card{background:var(--ios-card2);border:0;border-radius:16px}
+body.admin-console .history-row{border-bottom:.5px solid var(--ios-sep)}
+body.admin-console .history-row p{color:var(--ios-label2)}
+body.admin-console .role-stats>div{border-bottom:.5px solid var(--ios-sep)}
+body.admin-console .metrics article>span{color:var(--ios-label2);font-weight:500}
+body.admin-console .metrics strong{font-weight:700;letter-spacing:-.04em}
+body.admin-console .metrics article:nth-child(1) strong{color:var(--ios-accent)}
+body.admin-console .metrics article:nth-child(2) strong{color:var(--ios-orange)}
+body.admin-console .metrics article:nth-child(3) strong{color:var(--ios-indigo)}
+body.admin-console .metrics article:nth-child(4) strong{color:var(--ios-red)}
+body.admin-console .console-header h1{font-weight:800;letter-spacing:-.035em}
+body.admin-console .ux-section{background:var(--ios-fill2);border:0;border-radius:16px}
+body.admin-console .ux-section>summary small{color:var(--ios-label2)}
+body.admin-console .push-preview{background:color-mix(in srgb,var(--ios-card) 72%,transparent);-webkit-backdrop-filter:blur(30px) saturate(1.8);backdrop-filter:blur(30px) saturate(1.8);border:.5px solid var(--ios-sep);border-radius:24px;box-shadow:var(--ios-shadow-lg)}
+body.admin-console .preview-brand{color:var(--ios-label2)}
+body.admin-console .preview-column .panel{background:linear-gradient(160deg,#e6efff,#f4ecff 55%,#fff0f3)}
+@media(prefers-color-scheme:dark){body.admin-console .preview-column .panel{background:linear-gradient(160deg,#0d1a33,#1d1433 55%,#2a1220)}}
+
+/* Badges and status */
+body.admin-console .badge,body.admin-console .pill{border-radius:999px;font-weight:600;background:var(--ios-tint);color:var(--ios-accent)}
+body.admin-console :is(.badge.done,.badge.ok){background:var(--ios-green-tint);color:var(--ios-green)}
+body.admin-console .badge.scheduled{background:var(--ios-orange-tint);color:var(--ios-orange)}
+body.admin-console :is(.badge.fail,.badge.cancelled){background:var(--ios-red-tint);color:var(--ios-red)}
+body.admin-console :is(.badge.queued,.badge.pending){background:var(--ios-fill);color:var(--ios-label2)}
+body.admin-console .status{background:var(--ios-tint);color:var(--ios-accent);border-radius:12px}
+body.admin-console .status.ok{background:var(--ios-green-tint);color:var(--ios-green)}
+body.admin-console .status.error{background:var(--ios-red-tint);color:var(--ios-red)}
+body.admin-console .ux-chips .ux-chip,body.admin-chat .ux-chips .ux-chip{background:var(--ios-fill);border:0;color:var(--ios-label);font-weight:500}
+body.admin-console .ux-chips .ux-chip.active,body.admin-chat .ux-chips .ux-chip.active{background:var(--ios-label);color:var(--ios-card)}
+
+/* Dialogs as iOS sheets */
+body.admin-console .admin-dialog{background:var(--ios-card);color:var(--ios-label);border-radius:22px;box-shadow:var(--ios-shadow-lg)}
+body.admin-console .admin-dialog::backdrop{background:rgba(0,0,0,.32);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+body.admin-console .admin-dialog .message-body{background:var(--ios-fill2);border:0;border-radius:14px}
+body.admin-console .delivery-row{border-bottom:.5px solid var(--ios-sep)}
+
+/* Login */
+body.admin-console .login-panel{background:var(--ios-card);border:0;border-radius:28px;box-shadow:var(--ios-shadow-lg)}
+body.admin-console .login-brand{color:var(--ios-label)}
+body.admin-console :is(.login-brand,.console-brand) img{box-shadow:0 6px 16px rgba(0,122,255,.25)}
+
+/* Desktop sidebar */
+@media(min-width:701px){
+ body.admin-console .console-nav{background:var(--ios-card2);border-right:.5px solid var(--ios-sep);color:var(--ios-label)}
+ body.admin-console .console-brand{color:var(--ios-label)}
+ body.admin-console :is(.console-brand small,.nav-label,.nav-bottom a){color:var(--ios-label2)}
+ body.admin-console .console-nav nav :is(button,a){background:transparent;color:var(--ios-label);font-weight:500;justify-content:flex-start;width:100%}
+ body.admin-console .console-nav nav :is(.active,a:hover,button:hover){background:var(--ios-tint);color:var(--ios-accent);text-decoration:none}
+ body.admin-console .nav-bottom button{background:var(--ios-fill);color:var(--ios-label)}
+}
+
+/* Mobile: translucent bars */
+@media(max-width:700px){
+ body.admin-console .console-nav{background:var(--ios-bar);-webkit-backdrop-filter:saturate(1.8) blur(20px);backdrop-filter:saturate(1.8) blur(20px);border-bottom:.5px solid var(--ios-sep);min-height:56px}
+ body.admin-console .console-brand{color:var(--ios-label)}
+ body.admin-console .nav-bottom a{color:var(--ios-accent)}
+ body.admin-console .nav-bottom button{background:var(--ios-fill);color:var(--ios-label);border:0}
+ body.admin-console .console-header h1{font-size:30px}
+ body.admin-console .console-header #btnReload{border-radius:50%;background:var(--ios-fill)}
+ body.admin-console .panel{border-radius:20px}
+ body.admin-console .admin-dialog{border-radius:14px 14px 0 0}
+ body.admin-console .admin-dialog::before{background:var(--ios-label3)}
+ .admin-bottom-bar{background:var(--ios-bar)!important;-webkit-backdrop-filter:saturate(1.8) blur(20px);backdrop-filter:saturate(1.8) blur(20px);border-top:.5px solid var(--ios-sep)!important;box-shadow:none!important}
+ .admin-bottom-bar a{color:#8e8e93!important;font-weight:500}
+ .admin-bottom-bar a.active{color:var(--ios-accent)!important}
+ .admin-bottom-bar .nav-active-indicator{background:transparent!important}
+ .admin-bottom-bar .bottom-unread{background:var(--ios-red);border-color:var(--ios-card)}
+ body.admin-console.admin-authenticated .ux-fab{background:var(--ios-accent);border-radius:999px;box-shadow:0 10px 30px color-mix(in srgb,var(--ios-accent) 40%,transparent)}
+}
+
+/* Admin inbox */
+body.admin-chat .messenger{background:var(--ios-bg)}
+body.admin-chat .inbox{background:var(--ios-card);border-color:var(--ios-sep)}
+body.admin-chat :is(.brand,.inbox-heading h1,.conversation-title,.account strong,.thread-header h2){color:var(--ios-label)}
+body.admin-chat :is(.brand small,.preview,.room-meta,.room-summary,.account small,.header-copy p,.search-count,.message time,.sender,.day){color:var(--ios-label2)}
+body.admin-chat .conversation{border-radius:14px;background:transparent}
+body.admin-chat .conversation:hover{background:var(--ios-fill2)}
+body.admin-chat .conversation.active{background:var(--ios-tint);border-color:transparent}
+body.admin-chat :is(.avatar,.account-avatar,.mini-avatar){background:linear-gradient(145deg,#5ac8fa,#007aff);color:#fff}
+body.admin-chat .room-controls button{background:var(--ios-fill);border:0;color:var(--ios-label);border-radius:999px}
+body.admin-chat .room-controls button.active{background:var(--ios-label);color:var(--ios-card)}
+body.admin-chat .thread{background:var(--ios-bg)}
+body.admin-chat .thread-header,body.admin-chat .composer{background:var(--ios-bar);-webkit-backdrop-filter:saturate(1.8) blur(20px);backdrop-filter:saturate(1.8) blur(20px);border-color:var(--ios-sep)}
+body.admin-chat .thread-tools button,body.admin-chat .icon-button{background:var(--ios-fill);border:0;color:var(--ios-accent)}
+body.admin-chat :is(.room-details,.message-filter){background:var(--ios-card);border-color:var(--ios-sep);color:var(--ios-label2)}
+body.admin-chat .connection{background:transparent;color:var(--ios-label2)}
+body.admin-chat .bubble{background:var(--ios-card);color:var(--ios-label);border:0;border-radius:20px;box-shadow:none}
+body.admin-chat .outgoing .bubble{background:var(--ios-accent);color:#fff}
+body.admin-chat .compose-box{background:var(--ios-card);border:.5px solid var(--ios-sep);border-radius:22px}
+body.admin-chat .compose-box textarea{color:var(--ios-label);background:transparent}
+body.admin-chat .send{background:var(--ios-accent);color:#fff;border-radius:50%}
+body.admin-chat :is(.older,.new-messages){background:var(--ios-card);color:var(--ios-accent);border:0;box-shadow:var(--ios-shadow)}
+body.admin-chat :is(.welcome,.login-gate) :is(h2){color:var(--ios-label)}
+body.admin-chat :is(.welcome,.login-gate) p{color:var(--ios-label2)}
+
+/* User chat: iOS Messages palette, respects the existing light/dark switch */
+html body.user-chat{--surface:#fff;--canvas:#f2f2f7;--ink:#1c1c1e;--muted:rgba(60,60,67,.62);--line:rgba(60,60,67,.13);--incoming:#e9e9eb;--accent:#007aff;--field:rgba(118,118,128,.12);--room-accent:#007aff;--room-canvas:#f2f2f7;--room-surface:#fff;--room-ink:#1c1c1e;--room-muted:rgba(60,60,67,.62);--room-line:rgba(60,60,67,.13);--ios-bar:rgba(249,249,251,.8);--room-font:-apple-system,BlinkMacSystemFont,"SF Pro Text","Sarabun",system-ui,sans-serif}
+html body.user-chat[data-theme=dark]{--surface:#1c1c1e;--canvas:#000;--ink:#f5f5f7;--muted:rgba(235,235,245,.6);--line:rgba(84,84,88,.55);--incoming:#26262a;--accent:#0a84ff;--field:rgba(118,118,128,.24);--room-accent:#0a84ff;--room-canvas:#000;--room-surface:#1c1c1e;--room-ink:#f5f5f7;--room-muted:rgba(235,235,245,.6);--room-line:rgba(84,84,88,.55);--ios-bar:rgba(22,22,24,.8)}
+html body.user-chat .thread-header,html body.user-chat .composer{background:var(--ios-bar);-webkit-backdrop-filter:saturate(1.8) blur(20px);backdrop-filter:saturate(1.8) blur(20px)}
+html body.user-chat .bubble{border:0;box-shadow:none;border-radius:20px 20px 20px 6px}
+html body.user-chat .outgoing .bubble{background:var(--accent);color:#fff;border-radius:20px 20px 6px 20px}
+html body.user-chat .compose-box{border-radius:22px}
+html body.user-chat .send{background:var(--accent)}
+html body.user-chat .personal-settings{border-radius:14px 14px 0 0}

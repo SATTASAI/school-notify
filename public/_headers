@@ -13,3 +13,5 @@
   Cache-Control: no-cache
 /ux.js
   Cache-Control: no-cache
+/theme.css
+  Cache-Control: no-cache
