@@ -32,3 +32,18 @@ table{width:100%;border-collapse:collapse;font-size:.88rem}
 th,td{text-align:left;padding:8px 6px;border-bottom:1px solid #eef1f5;vertical-align:top}
 .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.75rem;background:#eef3fb}
 .badge.done{background:#e7f6ec;color:#146c2e}.badge.scheduled{background:#fff4e0;color:#8a5200}.badge.cancelled{background:#f1f1f1;color:#777}
+/* Mobile fit and touch targets */
+.wrap{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));padding-bottom:max(48px,env(safe-area-inset-bottom))}
+.card{overflow-wrap:anywhere}
+table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+button,.chip{min-height:44px;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:transform 140ms ease,filter 140ms ease}
+button:active:not(:disabled),.chip:active{transform:scale(.97)}
+.chip:has(input:checked){background:#e8f0fe;border-color:#1e66d2;color:#1e3a66}
+input:focus,textarea:focus{outline:none;border-color:#1e66d2;box-shadow:0 0 0 3px #e3edfd}
+@media(max-width:600px){
+ input[type=text],input[type=password],input[type=datetime-local],textarea{font-size:16px}
+ .row button,.row a{flex:1}
+ .row a button{width:100%}
+ .stats{grid-template-columns:repeat(2,1fr)}
+ header img{width:42px;height:42px}
+}

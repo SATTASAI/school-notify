@@ -9,3 +9,7 @@
 
 /room-ui.css
   Cache-Control: no-cache
+/ux.css
+  Cache-Control: no-cache
+/ux.js
+  Cache-Control: no-cache
