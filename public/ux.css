@@ -1,0 +1,107 @@
+/* UX layer: chips, folding, collapsible sections, floating create button, mobile fit. */
+:root{--ux-blue:#2463d6;--ux-ink:#21334d;--ux-line:#e2e9f3;--ux-ease:cubic-bezier(.22,.8,.25,1)}
+
+/* Chip filters */
+.ux-chip-source{display:none!important}
+.ux-chips{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;padding:2px;margin:0;min-width:0;max-width:100%}
+.ux-chips::-webkit-scrollbar{display:none}
+.ux-chips .ux-chip,.admin-console .ux-chips .ux-chip{flex:none;scroll-snap-align:start;font:inherit;font-size:13px;font-weight:500;line-height:1.2;min-height:36px;padding:8px 14px;border-radius:999px;border:1px solid #d9e3ef;background:#fff;color:#4d6382;cursor:pointer;white-space:nowrap;transition:background-color 160ms ease,color 160ms ease,border-color 160ms ease,transform 140ms var(--ux-ease)}
+.ux-chips .ux-chip:active{transform:scale(.96)}
+.ux-chips .ux-chip.active,.admin-console .ux-chips .ux-chip.active{background:var(--ux-blue);border-color:var(--ux-blue);color:#fff}
+.admin-console .filters{flex-wrap:wrap}
+.admin-console .filters input{flex:1 1 240px}
+.admin-chat .ux-chips{padding:0 10px 12px}
+.admin-chat .ux-chips .ux-chip{min-height:32px;padding:6px 12px;font-size:12px}
+
+/* Folding long text */
+.ux-clamp{display:-webkit-box!important;-webkit-box-orient:vertical;-webkit-line-clamp:var(--ux-lines,3);overflow:hidden}
+#previewBody.ux-clamp{--ux-lines:6}
+.message-body.ux-clamp{--ux-lines:8}
+.history-row p.ux-clamp{--ux-lines:2}
+.ux-clamp.ux-open{display:block!important;-webkit-line-clamp:unset;overflow:visible}
+.bubble.ux-fold:not(.ux-open){max-height:15.5em;overflow:hidden;-webkit-mask-image:linear-gradient(#000 70%,transparent);mask-image:linear-gradient(#000 70%,transparent)}
+button.ux-more,.admin-console button.ux-more{display:inline-flex;align-items:center;gap:4px;background:none!important;border:0;color:var(--ux-blue)!important;font:inherit;font-size:12px;font-weight:600;padding:4px 0;margin:0 0 4px;min-height:28px;cursor:pointer;box-shadow:none}
+button.ux-more::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 1.6px 1.6px 0;transform:rotate(45deg) translateY(-2px);transition:transform 160ms ease}
+button.ux-more[aria-expanded=true]::after{transform:rotate(-135deg) translate(-1px,-1px)}
+.history-row button.ux-more{display:flex}
+.message-content>button.ux-more{align-self:flex-start;padding:2px 6px}
+.outgoing .history-row button.ux-more{display:flex}
+.message-content>button.ux-more{align-self:flex-end}
+
+/* Collapsible section in the compose form */
+.ux-section{border:1px solid var(--ux-line);border-radius:14px;margin:20px 0;background:#fbfcfe;overflow:hidden}
+.ux-section>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:14px 16px;font-weight:600;font-size:14px;min-height:52px}
+.ux-section>summary::-webkit-details-marker{display:none}
+.ux-section>summary span{flex:1}
+.ux-section>summary{flex-wrap:wrap;row-gap:2px}
+.ux-section>summary small{order:3;flex-basis:100%;color:#738298;font-weight:400;font-size:12px}
+.ux-section>summary::after{content:"";flex:none;width:8px;height:8px;border:solid #7d8ea6;border-width:0 2px 2px 0;transform:rotate(45deg);transition:transform 180ms var(--ux-ease)}
+.ux-section[open]>summary::after{transform:rotate(-135deg)}
+.ux-section-body{padding:0 16px 16px}
+.ux-section-body>label:first-child{margin-top:4px}
+
+/* Device cards: compact on mobile */
+.ux-card-toggle{display:none!important}
+.admin-console .history-row{cursor:pointer}
+.admin-console .panel,.admin-console .admin-dialog,.admin-console .delivery-row{overflow-wrap:anywhere}
+.admin-console .delivery-row{flex-wrap:wrap}
+
+/* Floating create button (mobile admin) */
+.ux-fab{display:none}
+@media(max-width:700px){
+ body.admin-console.admin-authenticated .ux-fab{position:fixed;z-index:31;right:max(16px,env(safe-area-inset-right));bottom:calc(var(--admin-nav-height,66px) + 14px);display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 20px 0 16px;border:0;border-radius:18px;background:var(--ux-blue);color:#fff;font:600 15px/1 var(--admin-font,system-ui);box-shadow:0 10px 26px #2463d645,0 2px 6px #12305a26;transition:padding 220ms var(--ux-ease),border-radius 220ms var(--ux-ease),transform 200ms var(--ux-ease),opacity 160ms ease}
+ .ux-fab .admin-icon{width:22px;height:22px}
+ .ux-fab span{max-width:140px;overflow:hidden;white-space:nowrap;transition:max-width 220ms var(--ux-ease),opacity 160ms ease}
+ .ux-fab.ux-fab-compact{padding:0 15px;border-radius:50%}
+ .ux-fab.ux-fab-compact span{max-width:0;opacity:0}
+ .ux-fab:active{transform:scale(.94)}
+ body[data-view=compose] .ux-fab,html.admin-keyboard-open .ux-fab{opacity:0;pointer-events:none;transform:translateY(16px) scale(.9)}
+
+ /* Compact header: the bottom bar and the floating button carry navigation */
+ .admin-console .console-header{display:flex;align-items:flex-start;gap:12px}
+ .admin-console .console-header>div:first-child{min-width:0;flex:1}
+ .admin-console .console-header #pageSubtitle{display:none}
+ .admin-console .console-header h1{font-size:23px;margin:0}
+ .admin-console .console-header .actions{margin:0!important;flex:none}
+ .admin-console .console-header .actions [data-tab=compose]{display:none!important}
+ .admin-console .console-header #btnReload{min-height:40px!important;width:40px;padding:0!important;border-radius:12px}
+ .admin-console .console-header #btnReload .button-caption{display:none}
+ .admin-console .updated-at{margin:4px 0 12px;text-align:left}
+ .admin-console.admin-authenticated .console-main{padding-bottom:96px}
+
+ /* Overview */
+ .admin-console .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .admin-console .metrics small{display:none}
+ .admin-console .metrics article{padding:14px 13px}
+ .admin-console .metrics strong{font-size:27px;margin:4px 0}
+
+ /* History rows as compact tappable cards */
+ .admin-console .history-row{grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;padding:14px 4px;border-radius:12px;transition:background-color 140ms ease}
+ .admin-console .history-row:active{background:#f3f7fd}
+ .admin-console .history-row>div:first-child{grid-column:1 / -1}
+ .admin-console .history-row .history-status{grid-column:1;grid-row:2;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+ .admin-console .history-row .history-status br{display:none}
+ .admin-console .history-row>button{grid-column:2;grid-row:2!important;min-height:34px!important;padding:6px 10px;font-size:12px}
+ .admin-console .history-row small{font-size:11px}
+
+ /* Compose: form first, preview after */
+ .admin-console .compose-grid .preview-column{order:2}
+ .admin-console .compose-grid>form{order:1}
+ .admin-console #composeForm .actions #btnSend{flex:1}
+ .admin-console .ux-section{margin:18px 0}
+ .admin-console .input-action{flex-wrap:nowrap}
+
+ /* Device cards */
+ .admin-console .ux-card-toggle{display:inline-flex!important;align-items:center;gap:6px;margin:8px 0 0;padding:4px 0!important;min-height:30px;background:none!important;border:0!important;color:var(--ux-blue)!important;font-size:12px!important;font-weight:600}
+ .admin-console .ux-card:not(.ux-card-open)>p:not(:nth-of-type(2)){display:none}
+ .admin-console .device-card .actions{display:flex;gap:8px;align-items:center}
+ .admin-console .device-card .actions button{min-height:38px}
+
+ /* Dialogs */
+ .admin-console .admin-dialog .detail-grid{grid-template-columns:96px minmax(0,1fr)}
+ .admin-console .admin-dialog .dialog-heading h2{overflow-wrap:anywhere}
+
+ /* Admin inbox */
+ .admin-chat .room-controls{flex-wrap:wrap}
+}
+@media(max-width:700px) and (prefers-reduced-motion:reduce){.ux-fab,.ux-fab span{transition:none!important}}
