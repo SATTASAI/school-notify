@@ -47,3 +47,27 @@ input:focus,textarea:focus{outline:none;border-color:#1e66d2;box-shadow:0 0 0 3p
  .stats{grid-template-columns:repeat(2,1fr)}
  header img{width:42px;height:42px}
 }
+/* Premium iOS-style theme (follows device light/dark) */
+:root{--bg:#f2f2f7;--card:#fff;--label:#1c1c1e;--label2:rgba(60,60,67,.64);--sep:rgba(60,60,67,.13);--fill:rgba(118,118,128,.12);--accent:#007aff;--tint:rgba(0,122,255,.11);--ok:#248a3d;--ok-t:rgba(52,199,89,.15);--err:#d70015;--err-t:rgba(255,59,48,.12);color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--card:#1c1c1e;--label:#f5f5f7;--label2:rgba(235,235,245,.6);--sep:rgba(84,84,88,.55);--fill:rgba(118,118,128,.24);--accent:#0a84ff;--tint:rgba(10,132,255,.2);--ok:#30d158;--ok-t:rgba(48,209,88,.17);--err:#ff453a;--err-t:rgba(255,69,58,.17);color-scheme:dark}}
+body{background:var(--bg);color:var(--label);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Sarabun",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+h1{font-size:1.6rem;font-weight:800;letter-spacing:-.03em}
+h2{letter-spacing:-.02em}
+.sub,.hint,.stats span{color:var(--label2)}
+header img{border-radius:14px;box-shadow:0 6px 16px rgba(0,122,255,.25)}
+.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:0 1px 1px rgba(0,0,0,.02),0 6px 20px rgba(17,24,39,.05)}
+@media(prefers-color-scheme:dark){.card{box-shadow:none}}
+input[type=text],input[type=password],input[type=datetime-local],textarea{background:var(--fill);border:1px solid transparent;border-radius:12px;color:var(--label)}
+input:focus,textarea:focus{background:var(--card);border-color:var(--accent);box-shadow:0 0 0 4px var(--tint)}
+.chip{border:0;background:var(--fill);border-radius:999px}
+.chip:has(input:checked){background:var(--tint);color:var(--accent);border:0}
+.chip input{accent-color:var(--accent)}
+button{background:var(--accent);border-radius:12px}
+button.ghost{background:var(--fill);color:var(--accent)}
+button.danger{background:var(--err-t);color:var(--err)}
+.status{background:var(--tint);color:var(--accent);border-radius:12px}
+.status.ok{background:var(--ok-t);color:var(--ok)}
+.status.err{background:var(--err-t);color:var(--err)}
+.stats div{background:var(--fill);border-radius:14px}
+th,td{border-bottom:.5px solid var(--sep)}
