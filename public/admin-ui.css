@@ -228,3 +228,9 @@ body.admin-console,body.admin-chat{font-family:var(--admin-font);-webkit-font-sm
 .admin-chat .timeline{flex:1 1 0;min-height:0;overflow-y:auto}
 .admin-chat :is(.thread-header,.connection,.composer,.login-gate,.message-filter){flex-shrink:0}
 .admin-chat .room-details{flex-shrink:0;max-height:30%;overflow-y:auto}
+
+/* Keyboard open on mobile console: stay pinned to the visible area, hide the bottom bar while typing. */
+@media(max-width:700px){
+ html.admin-keyboard-open body.admin-console.admin-authenticated .console-shell{position:fixed;top:var(--admin-vv-top,0px);left:0;right:0;padding-bottom:0}
+ html.admin-keyboard-open body.admin-console .admin-bottom-bar{display:none}
+}

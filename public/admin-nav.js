@@ -27,7 +27,11 @@
  window.NotifyAdminUI={svg,reveal,animate,openDialog,closeDialog,setActive,reducedMotion:()=>Boolean(reduced?.matches)};setActive(chatPage?'messages':'overview');
  const viewportValues=new Map();
  function value(key,value){if(viewportValues.get(key)===value)return;viewportValues.set(key,value);document.documentElement.style.setProperty(key,value);}
- function viewport(){const v=window.visualViewport;value('--admin-vh',(v?.height||window.innerHeight)+'px');const inset=Math.max(0,window.innerHeight-((v?.height||window.innerHeight)+(v?.offsetTop||0)));value('--admin-keyboard-inset',inset+'px');if(nav.offsetHeight>0)value('--admin-nav-height',nav.offsetHeight+'px');}
+ let keyboardOpen=false;
+ function viewport(){const v=window.visualViewport,height=v?.height||window.innerHeight,top=v?.offsetTop||0;value('--admin-vh',height+'px');const inset=Math.max(0,window.innerHeight-(height+top));value('--admin-keyboard-inset',inset+'px');value('--admin-vv-top',top+'px');
+  // Keyboard open: pin the console to the visible area and free the space used by the bottom bar.
+  const open=consolePage&&window.innerHeight-height>120;if(open!==keyboardOpen){keyboardOpen=open;document.documentElement.classList.toggle('admin-keyboard-open',open);if(open){const el=document.activeElement;if(el?.closest?.('.console-main'))requestAnimationFrame(()=>el.scrollIntoView?.({block:'center'}));}}
+  if(nav.offsetHeight>0)value('--admin-nav-height',nav.offsetHeight+'px');}
  let scheduled=false;function scheduleViewport(){if(scheduled)return;scheduled=true;requestAnimationFrame(()=>{scheduled=false;viewport();});}
  viewport();window.addEventListener('resize',scheduleViewport);window.visualViewport?.addEventListener('resize',scheduleViewport);window.visualViewport?.addEventListener('scroll',scheduleViewport);
  if(typeof ResizeObserver!=='undefined')new ResizeObserver(scheduleViewport).observe(nav);
