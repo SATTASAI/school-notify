@@ -108,3 +108,13 @@ button.ux-more[aria-expanded=true]::after{transform:rotate(-135deg) translate(-1
 /* The floating button exists only for signed-in mobile admins. */
 body.admin-console:not(.admin-authenticated) .ux-fab{display:none!important}
 @media(min-width:701px){.ux-fab{display:none!important}}
+
+/* Pull to refresh indicator */
+.ux-ptr{position:fixed;left:50%;top:0;z-index:60;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--ios-card,#fff);color:var(--ios-accent,#007aff);box-shadow:0 4px 16px rgba(0,0,0,.14);opacity:0;transform:translate(-50%,-44px);pointer-events:none;transition:transform 260ms cubic-bezier(.32,.72,0,1),opacity 200ms ease}
+.ux-ptr svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:opacity 120ms}
+.ux-ptr:not(.ready):not(.spin) svg{opacity:.55}
+.ux-ptr.spin svg{animation:ux-ptr-spin 700ms linear infinite}
+@keyframes ux-ptr-spin{to{transform:rotate(360deg)}}
+body.user-chat .ux-ptr{background:var(--surface);color:var(--accent)}
+@media(prefers-color-scheme:dark){body:not(.admin-console):not(.admin-chat):not(.user-chat) .ux-ptr{background:#2c2c2e;color:#0a84ff}}
+@media(prefers-reduced-motion:reduce){.ux-ptr.spin svg{animation-duration:1.6s}}

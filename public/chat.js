@@ -228,6 +228,7 @@ async function init(){
   if(active)notifySchool('school-chat-ready');
 }
 if(!admin) initPersonalSettings();
+window.NotifyChat={refresh:async()=>{if(!active)return;if(admin)await loadRooms();if(ref)await load();}};
 init().catch(e=>{gate();state(e.message,true);});
 setInterval(()=>{if(document.hidden||!active||!embeddedVisible)return;if(admin)loadRooms().catch(e=>state(e.message,true));load();},15000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&active&&embeddedVisible){if(admin)loadRooms().catch(()=>{});load();}});
