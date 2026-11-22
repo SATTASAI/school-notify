@@ -25,7 +25,7 @@ function tab(name){
  if(previous!==name)window.NotifyAdminUI?.reveal(document.querySelector('[data-panel="'+name+'"]'),tabOrder.indexOf(name)>=tabOrder.indexOf(previous)?1:-1);
  if(name==='history'&&!$('history').children.length)loadHistory().catch(error);if(name==='devices')renderDevices();
 }
-window.NotifyAdmin={tab:name=>tab(name),current:()=>currentTab,order:tabOrder};
+window.NotifyAdmin={tab:name=>tab(name),current:()=>currentTab,order:tabOrder,refresh:()=>loadAll().catch(error)};
 function error(e){showMsg('globalMsg',e.message,'error');}
 async function enter(){await api('/api/auth');$('login').classList.add('hidden');$('app').classList.remove('hidden');document.body.classList.add('admin-authenticated');$('pw').value='';await loadAll();const view=new URLSearchParams(location.search).get('view');if(view&&titles[view])tab(view);else tab(currentTab);const id=Number(new URLSearchParams(location.search).get('notification'));if(Number.isSafeInteger(id)&&id>0)await openDetail(id);}
 SchoolPasskeys.mount($('passkeyLogin'),async result=>{token=result.token;sessionStorage.setItem('notifyToken',token);await enter();});

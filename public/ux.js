@@ -87,6 +87,46 @@
  window.addEventListener('resize',()=>{d.querySelectorAll('[data-ux-fold="short"]').forEach(el=>delete el.dataset.uxFold);schedule();});
  schedule();
 
+ /* ---------- Pull to refresh ---------- */
+ const ptr=d.createElement('div');ptr.className='ux-ptr';ptr.setAttribute('aria-hidden','true');
+ ptr.innerHTML='<svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>';body.append(ptr);
+ const live=d.createElement('div');live.className='sr-only ux-live';live.setAttribute('role','status');live.style.cssText='position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)';body.append(live);
+ let refreshing=false;
+ function pullToRefresh(getScroller,run){
+  const threshold=72;let st=null,dist=0;
+  const top=sc=>sc===d.scrollingElement?window.scrollY:sc.scrollTop;
+  const blocked=t=>t.closest?.('input,textarea,select,[contenteditable],dialog,.ux-chips')||d.querySelector('dialog[open]')||d.documentElement.classList.contains('admin-keyboard-open');
+  d.addEventListener('touchstart',e=>{
+   st=null;if(refreshing||e.touches.length!==1)return;const sc=getScroller();if(!sc||!sc.contains(e.target)&&sc!==d.scrollingElement)return;
+   if(top(sc)>0||blocked(e.target))return;
+   const rect=sc===d.scrollingElement?{top:0}:sc.getBoundingClientRect();
+   st={x:e.touches[0].clientX,y:e.touches[0].clientY,sc,top:Math.max(rect.top,0)};dist=0;
+  },{passive:true});
+  d.addEventListener('touchmove',e=>{
+   if(!st)return;const t=e.touches[0],dx=t.clientX-st.x,dy=t.clientY-st.y;
+   if(dist===0&&(Math.abs(dx)>Math.abs(dy)||dy<=0)){if(Math.abs(dx)>8||dy<-4)st=null;return;}
+   if(top(st.sc)>0){st=null;hide();return;}
+   dist=Math.min(dy*.5,120);const p=Math.min(dist/threshold,1);
+   ptr.style.transition='none';ptr.style.top=st.top+'px';ptr.style.opacity=String(Math.min(1,dist/24));
+   ptr.style.transform=`translate(-50%,${dist-44}px) rotate(${p*270}deg)`;ptr.classList.toggle('ready',p>=1);
+  },{passive:true});
+  const end=async()=>{
+   if(!st)return;const ok=dist>=threshold;st=null;
+   if(!ok){hide();return;}
+   refreshing=true;ptr.style.transition='';ptr.classList.add('spin');ptr.style.transform='translate(-50%,28px)';live.textContent='กำลังรีเฟรช';
+   try{await Promise.all([run(),new Promise(r=>setTimeout(r,500))]);live.textContent='รีเฟรชแล้ว';}catch{live.textContent='รีเฟรชไม่สำเร็จ';}
+   finally{refreshing=false;hide();}
+  };
+  d.addEventListener('touchend',end,{passive:true});d.addEventListener('touchcancel',()=>{st=null;hide();},{passive:true});
+ }
+ function hide(){ptr.style.transition='';ptr.classList.remove('spin','ready');ptr.style.opacity='0';ptr.style.transform='translate(-50%,-44px)';}
+ if(consolePage)pullToRefresh(()=>body.classList.contains('admin-authenticated')?d.querySelector('.console-main'):null,()=>window.NotifyAdmin?.refresh());
+ else if(d.getElementById('timeline')){
+  const chatRefresh=()=>window.NotifyChat?.refresh();
+  pullToRefresh(()=>{const list=d.getElementById('roomList'),m=d.getElementById('messenger');return list&&list.offsetParent&&!(mobile.matches&&m?.classList.contains('room-open'))?list:d.getElementById('timeline');},chatRefresh);
+ }
+ else pullToRefresh(()=>d.scrollingElement,()=>{location.reload();return new Promise(()=>{});});
+
  if(!consolePage)return;
  const tabs=()=>window.NotifyAdmin;
 
