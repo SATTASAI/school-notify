@@ -76,7 +76,7 @@ function appendMessageActions(bubble,message,linked){
   for(const action of [...actions,...(message.url?[{title:'ดูรายละเอียด ↗',url:message.url}]:[])]){
     if(!action?.url)continue;
     const href=safeLink(action.url);if(!href||linked.has(href))continue;
-    const link=node('a','detail-link',String(action.title||'').trim()||'เปิดลิงก์ ↗');
+    const label=String(action.title||'').trim()||'เปิดลิงก์ ↗';const link=node('a','detail-link',admin?label:label.replace(/\s*↗$/,''));
     link.href=href;link.target='_blank';link.rel='noopener noreferrer';bubble.append(link);linked.add(href);
   }
 }
@@ -86,12 +86,12 @@ function revealMessage(row){
   row.animate([{opacity:.35,transform:`translate3d(${direction*10}px,6px,0)`},{opacity:1,transform:'translate3d(0,0,0)'}],{duration:180,easing:'cubic-bezier(.22,.8,.25,1)'});
 }
 function render(scroll=false){
-  const fragment=document.createDocumentFragment(),existingIds=new Set([...$('messages').children].map(el=>el.id)),newRows=[];let day='', previous=null;
+  const fragment=document.createDocumentFragment(),existingIds=new Set([...$('messages').children].map(el=>el.id)),newRows=[];let day='', previous=null, previousRow=null;
   for(const m of [...messages,...(optimistic?[optimistic]:[])]){
-    const date=dateLabel(m.created_at); if(date!==day){fragment.append(node('div','day',date));day=date;}
+    const date=dateLabel(m.created_at); if(date!==day){const sep=node('div','day');if(admin)sep.textContent=date;else sep.append(node('b','',date),' '+fmtTime(m.created_at));fragment.append(sep);day=date;}
     const outgoing=admin?m.kind==='school':m.kind==='user';
     const grouped=!admin && previous && previous.kind===m.kind && m.created_at-previous.created_at<300000 && dateLabel(previous.created_at)===date;
-    const row=node('article','message'+(outgoing?' outgoing':'')+(grouped?' grouped':'')+(m.pending?' pending':''));row.id='message-'+m.kind+'-'+m.id;if(scroll&&existingIds.size&&!existingIds.has(row.id)&&!(m.kind==='user'&&existingIds.has('message-user-pending')))newRows.push(row);
+    const row=node('article','message'+(outgoing?' outgoing':'')+(grouped?' grouped':'')+(m.pending?' pending':''));row.id='message-'+m.kind+'-'+m.id;if(grouped&&previousRow)previousRow.classList.add('has-next');previousRow=row;if(scroll&&existingIds.size&&!existingIds.has(row.id)&&!(m.kind==='user'&&existingIds.has('message-user-pending')))newRows.push(row);
     if(!outgoing)row.append(node('span','mini-avatar',admin?'ผู้ใช้':'บปด'));
     const content=node('div','message-content');
     if(!outgoing)content.append(node('div','sender',admin?(rooms.find(r=>r.ref===ref)?.label||'ผู้ใช้'):(m.source==='admin-reply'||m.source?.startsWith('reply:'))?'แอดมินโรงเรียน':'โรงเรียนบ้านป่าเด็ง'));

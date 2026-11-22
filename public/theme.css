@@ -142,3 +142,55 @@ html body.user-chat .outgoing .bubble{background:var(--accent);color:#fff;border
 html body.user-chat .compose-box{border-radius:22px}
 html body.user-chat .send{background:var(--accent)}
 html body.user-chat .personal-settings{border-radius:14px 14px 0 0}
+
+/* User chat: premium iOS Messages layout (header, bubbles, actions, composer, date stamps) */
+html body.user-chat{--ios-incoming:#e9e9eb;--ios-hair:rgba(60,60,67,.18)}
+html body.user-chat[data-theme=dark]{--ios-incoming:#262629;--ios-hair:rgba(235,235,245,.14)}
+html body.user-chat .thread-header{position:relative;flex-direction:column;justify-content:center;gap:3px;min-height:0;padding-bottom:8px;border-bottom:.5px solid var(--ios-hair);z-index:2}
+html body.user-chat .school-avatar{width:44px;height:44px;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+html body.user-chat .header-copy{flex:none;text-align:center;max-width:calc(100% - 120px)}
+html body.user-chat .header-copy h1{font-size:13px;font-weight:600;line-height:1.35;letter-spacing:-.1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html body.user-chat .header-copy .verified{width:13px;height:13px;font-size:8px;background:var(--accent);margin-left:1px}
+html body.user-chat .header-copy p{font-size:10.5px;margin:0;line-height:1.3}
+html body.user-chat .thread-header .icon-button:not(.mobile-back){position:absolute;right:max(10px,calc((100vw - 800px)/2));bottom:10px;width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:var(--accent)}
+html body.user-chat .thread-header .icon-button:not(.mobile-back):hover{background:var(--field)}
+html body.user-chat .thread-header .icon-button svg{width:22px;height:22px}
+html body.user-chat .timeline{padding-top:6px}
+html body.user-chat .day{border:0;background:transparent;padding:0;margin:18px auto 10px;font-size:11px;font-weight:400;color:var(--muted)}
+html body.user-chat .day b{font-weight:600}
+html body.user-chat .message{gap:7px;margin:0 0 14px}
+html body.user-chat .message.grouped{margin-top:0}
+html body.user-chat .message.has-next{margin-bottom:3px}
+html body.user-chat .message.has-next time{display:none}
+html body.user-chat .message .mini-avatar{width:28px;height:28px;border:0;border-radius:50%;margin-bottom:22px;font-size:0;background:var(--ios-incoming) url(/icon-192.png) center/cover no-repeat;visibility:visible}
+html body.user-chat .message.has-next .mini-avatar{visibility:hidden}
+html body.user-chat .message.grouped:not(.has-next) .mini-avatar{visibility:visible}
+html body.user-chat .sender{font-size:11px;margin:0 0 3px 13px}
+html body.user-chat .message-content{max-width:min(78%,560px)}
+html body.user-chat .bubble{background:var(--ios-incoming);color:var(--ink);padding:8px 14px;border-radius:19px;line-height:1.55;font-size:var(--message-font-size)}
+html body.user-chat .message:not(.outgoing).has-next .bubble{border-bottom-left-radius:6px}
+html body.user-chat .message:not(.outgoing).grouped .bubble{border-top-left-radius:6px}
+html body.user-chat .message:not(.outgoing):not(.has-next) .bubble{border-bottom-left-radius:5px}
+html body.user-chat .outgoing .bubble{border-radius:19px}
+html body.user-chat .outgoing.has-next .bubble{border-bottom-right-radius:6px}
+html body.user-chat .outgoing.grouped .bubble{border-top-right-radius:6px}
+html body.user-chat .outgoing:not(.has-next) .bubble{border-bottom-right-radius:5px}
+html body.user-chat .bubble strong{font-weight:600;margin-bottom:3px}
+html body.user-chat .bubble:has(.detail-link){overflow:hidden;padding-bottom:0}
+html body.user-chat .message .bubble .detail-link,html body.user-chat[data-theme=dark] .message:not(.outgoing) .bubble .detail-link{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;margin:0 -14px;padding:10px 14px;background:transparent;border:0;border-top:.5px solid var(--ios-hair);border-radius:0;color:var(--accent);font-size:15px;font-weight:500;text-decoration:none;line-height:1.4}
+html body.user-chat .message .bubble .detail-link:first-of-type{margin-top:9px}
+html body.user-chat .message .bubble .detail-link::after{content:"";flex-shrink:0;width:7px;height:7px;border:solid var(--muted);border-width:1.8px 1.8px 0 0;transform:rotate(45deg);opacity:.7}
+html body.user-chat .message .bubble .detail-link:active{background:var(--ios-hair);transform:none}
+html body.user-chat .message time{font-size:10.5px;margin:3px 12px 0}
+html body.user-chat .composer{border-top:.5px solid var(--ios-hair);padding-top:7px}
+html body.user-chat .compose-box{background:var(--surface);border:1px solid var(--ios-hair);border-radius:20px;padding:3px 3px 3px 14px;gap:8px;align-items:flex-end;box-shadow:none}
+html body.user-chat[data-theme=dark] .compose-box{background:#1c1c1e}
+html body.user-chat .compose-box:focus-within{border-color:var(--ios-hair);box-shadow:none}
+html body.user-chat .compose-box textarea{min-height:32px;padding:4px 0;line-height:1.5}
+html body.user-chat .send{width:32px;height:32px;border-radius:50%;margin-bottom:0}
+html body.user-chat .send:disabled{opacity:1;background:#c7c7cc}
+html body.user-chat[data-theme=dark] .send:disabled{background:#3a3a3c}
+html body.user-chat .send svg{width:19px;height:19px}
+html body.user-chat .compose-caption{justify-content:center;gap:8px;font-size:10px;margin:5px 0 0;min-height:0}
+html body.user-chat #count.near-limit{margin-left:auto}
+html body.user-chat .new-messages{border:0;border-radius:999px;background:var(--ios-bar);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 4px 16px rgba(0,0,0,.12);font-weight:600}
