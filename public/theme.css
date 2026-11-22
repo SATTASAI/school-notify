@@ -194,3 +194,60 @@ html body.user-chat .send svg{width:19px;height:19px}
 html body.user-chat .compose-caption{justify-content:center;gap:8px;font-size:10px;margin:5px 0 0;min-height:0}
 html body.user-chat #count.near-limit{margin-left:auto}
 html body.user-chat .new-messages{border:0;border-radius:999px;background:var(--ios-bar);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:0 4px 16px rgba(0,0,0,.12);font-weight:600}
+
+/* Overview: stat strip, attention list; history: compact rows grouped by day */
+body.admin-console .ov-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--ios-card);border-radius:20px;box-shadow:var(--ios-shadow);margin:0 0 16px;overflow:hidden}
+body.admin-console .ov-stats button{all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:2px;padding:14px 4px;cursor:pointer;text-align:center;-webkit-tap-highlight-color:transparent;transition:background-color 140ms ease}
+body.admin-console .ov-stats button+button{border-left:.5px solid var(--ios-sep)}
+body.admin-console .ov-stats button:active,body.admin-console .ov-stats button:hover{background:var(--ios-fill2)}
+body.admin-console .ov-stats button:focus-visible{outline:2px solid var(--ios-accent);outline-offset:-2px}
+body.admin-console .ov-stats strong{font-size:24px;font-weight:700;letter-spacing:-.03em;line-height:1.15;color:var(--ios-label)}
+body.admin-console .ov-stats button:nth-child(1) strong{color:var(--ios-accent)}
+body.admin-console .ov-stats button:nth-child(2) strong{color:var(--ios-orange)}
+body.admin-console .ov-stats button:nth-child(3) strong{color:var(--ios-indigo)}
+body.admin-console .ov-stats button:nth-child(4) strong{color:var(--ios-red)}
+body.admin-console .ov-stats span{font-size:12px;color:var(--ios-label2);white-space:nowrap}
+body.admin-console .ov-attention{margin-bottom:16px}
+body.admin-console .ov-attention h2,body.admin-console .overview-grid .panel-heading h2{font-size:18px;margin:0 0 4px}
+body.admin-console .overview-grid .panel-heading{align-items:center}
+
+body.admin-console .attention-item{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:36px minmax(0,1fr) 10px;align-items:center;gap:12px;padding:11px 0;cursor:pointer;border-bottom:.5px solid var(--ios-sep);-webkit-tap-highlight-color:transparent}
+body.admin-console .attention-item:last-child{border-bottom:0}
+body.admin-console .attention-item:active{opacity:.6}
+body.admin-console .attention-item:focus-visible{outline:2px solid var(--ios-accent);border-radius:10px}
+body.admin-console .attention-text b,body.admin-console .attention-ok b{display:block;font-size:15px;font-weight:600;color:var(--ios-label)}
+body.admin-console .attention-text small,body.admin-console .attention-ok small{display:block;font-size:12px;color:var(--ios-label2);margin-top:1px}
+body.admin-console .attention-ok{display:flex;align-items:center;gap:12px;padding:8px 0}
+
+body.admin-console .nrow{display:grid;grid-template-columns:36px minmax(0,1fr) 10px;align-items:center;gap:12px;padding:12px 6px;margin:0 -6px;border-radius:12px;cursor:pointer;position:relative;-webkit-tap-highlight-color:transparent;transition:background-color 140ms ease}
+body.admin-console .nrow::after{content:"";position:absolute;left:54px;right:6px;bottom:0;border-bottom:.5px solid var(--ios-sep)}
+body.admin-console .nrow:last-child::after,body.admin-console .nrow:has(+.nrow-day)::after{display:none}
+body.admin-console .nrow:hover{background:var(--ios-fill2)}
+body.admin-console .nrow:active{background:var(--ios-fill)}
+body.admin-console .nrow:focus-visible{outline:2px solid var(--ios-accent);outline-offset:-2px}
+body.admin-console .nrow-icon{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;align-self:start;background:var(--ios-tint);color:var(--ios-accent)}
+body.admin-console .nrow-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+body.admin-console [data-tone=green]>.nrow-icon,body.admin-console .nrow-icon[data-tone=green]{background:var(--ios-green-tint);color:var(--ios-green)}
+body.admin-console [data-tone=orange]>.nrow-icon{background:var(--ios-orange-tint);color:var(--ios-orange)}
+body.admin-console [data-tone=warn]>.nrow-icon{background:var(--ios-red-tint);color:var(--ios-red)}
+body.admin-console [data-tone=muted]>.nrow-icon{background:var(--ios-fill);color:var(--ios-label2)}
+body.admin-console .nrow-main{min-width:0}
+body.admin-console .nrow-top{display:flex;align-items:baseline;gap:10px}
+body.admin-console .nrow-top h3{flex:1;min-width:0;margin:0;font-size:15px;font-weight:600;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.admin-console .nrow-top time{flex:none;font-size:12px;color:var(--ios-label3);font-variant-numeric:tabular-nums}
+body.admin-console .nrow p{margin:2px 0 0;font-size:13px;line-height:1.4;color:var(--ios-label2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.admin-console .nrow-meta{display:flex;flex-wrap:wrap;gap:2px 10px;margin-top:5px;font-size:12px}
+body.admin-console .nrow-status{font-weight:600;color:var(--ios-accent)}
+body.admin-console [data-tone=green] .nrow-status{color:var(--ios-green)}
+body.admin-console [data-tone=orange] .nrow-status{color:var(--ios-orange)}
+body.admin-console [data-tone=warn] .nrow-status{color:var(--ios-red)}
+body.admin-console [data-tone=muted] .nrow-status{color:var(--ios-label2)}
+body.admin-console .nrow-who{color:var(--ios-label3)}
+body.admin-console .nrow-bar{position:relative;height:4px;border-radius:4px;background:var(--ios-fill);margin-top:7px;overflow:hidden}
+body.admin-console .nrow-bar i,body.admin-console .nrow-bar b{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+body.admin-console .nrow-bar i{background:color-mix(in srgb,var(--ios-green) 45%,transparent)}
+body.admin-console .nrow-bar b{background:var(--ios-green)}
+body.admin-console .nrow-chev{width:8px;height:8px;border:solid var(--ios-label3);border-width:2px 2px 0 0;transform:rotate(45deg)}
+body.admin-console .nrow-day{margin:18px 0 2px;font-size:13px;font-weight:600;color:var(--ios-label2);letter-spacing:0}
+body.admin-console .nrow-day:first-child{margin-top:4px}
+@media(max-width:700px){body.admin-console .ov-stats strong{font-size:22px}body.admin-console .ov-stats span{font-size:11px}}
