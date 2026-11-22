@@ -183,6 +183,8 @@ async function selectRoom(room){
 }
 function updateDraft(){const d=$('draft');d.style.height='auto';d.style.height=Math.min(140,d.scrollHeight)+'px';$('count').textContent=d.value.length+'/'+max;$('count').classList.toggle('near-limit',d.value.length>=max-200);$('send').disabled=!active||busy||(admin&&!ref)||!d.value.trim();}
 $('draft').addEventListener('input',()=>{pendingId=null;saveDraft();updateDraft();});
+// Tell the school app when the keyboard opens for the composer so it can give the room the visible area.
+$('draft').addEventListener('focus',()=>notifySchool('school-chat-focus'));$('draft').addEventListener('blur',()=>notifySchool('school-chat-blur'));
 $('draft').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&!matchMedia('(pointer:coarse)').matches){e.preventDefault();$('composer').requestSubmit();}});
 $('composer').onsubmit=async e=>{
   e.preventDefault();const body=$('draft').value.trim();if(!body||busy||!active||(admin&&!ref))return;busy=true;updateDraft();const selected=ref;
